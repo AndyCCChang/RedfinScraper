@@ -1,8 +1,11 @@
+from __future__ import annotations
 import itertools
 import multiprocessing
 import concurrent.futures
 import io
 import csv
+import json
+import re
 
 import requests
 from bs4 import BeautifulSoup
@@ -176,9 +179,13 @@ class RedfinScraper:
 
 
         concat_df=pd.concat(df_list,axis=0,ignore_index=True)
-        converted_df=concat_df.drop('ZIP OR POSTAL CODE',axis=1).apply(lambda row:pd.to_numeric(row,errors='ignore'))
-        converted_df.insert(6,'ZIP OR POSTAL CODE',concat_df['ZIP OR POSTAL CODE'].astype(str))
-        converted_df.reset_index(inplace=True,drop=True)
+        if 'ZIP OR POSTAL CODE' in concat_df.columns:
+            converted_df=concat_df.drop('ZIP OR POSTAL CODE',axis=1).apply(lambda row:pd.to_numeric(row,errors='ignore'))
+            converted_df.insert(6,'ZIP OR POSTAL CODE',concat_df['ZIP OR POSTAL CODE'].astype(str))
+            converted_df.reset_index(inplace=True,drop=True)
+        else:
+            converted_df=concat_df.apply(lambda row:pd.to_numeric(row,errors='ignore'))
+            converted_df.reset_index(inplace=True,drop=True)
     
         self.df=converted_df
 
@@ -244,6 +251,41 @@ class RedfinScraper:
                 f"Chrome/51.{num_var2}.2704.{num_var} Safari/537.{num_var3} OPR/38.0.{num_var4}.41"}
         
         return user_agent
+
+
+    def _request_headers(self, api:bool=False, referer:str=None):
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/135.0.0.0 Safari/537.36"
+            ),
+            "Accept-Language": "en-US,en;q=0.9",
+            "Cache-Control": "no-cache",
+            "Pragma": "no-cache",
+        }
+
+        if api:
+            headers.update({
+                "Accept": "application/json, text/plain, */*",
+                "X-Requested-With": "XMLHttpRequest",
+            })
+            if referer is not None:
+                headers["Referer"] = referer
+        else:
+            headers.update({
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8",
+                "Sec-CH-UA": '"Google Chrome";v="135", "Not-A.Brand";v="8", "Chromium";v="135"',
+                "Sec-CH-UA-Mobile": "?0",
+                "Sec-CH-UA-Platform": '"Windows"',
+                "Sec-Fetch-Dest": "document",
+                "Sec-Fetch-Mode": "navigate",
+                "Sec-Fetch-Site": "none",
+                "Sec-Fetch-User": "?1",
+                "Upgrade-Insecure-Requests": "1",
+            })
+
+        return headers
 
 
 
@@ -375,9 +417,9 @@ class RedfinScraper:
 
     def _get_API_links(self,url_soups:list[tuple[str,BeautifulSoup]]):
         api_links=[]
-        for url,soup in url_soups:
+        for url,soup,html in url_soups:
             try:
-                target=soup.find(rsc.REDFIN_API_CLASS_DEF[0],rsc.REDFIN_API_CLASS_DEF[1])[rsc.REDFIN_API_CLASS_ID]
+                target=self._extract_api_link(html,soup)
                 api_links.append(target)
             except:
                 self._check_no_API_link(url)
@@ -388,7 +430,7 @@ class RedfinScraper:
 
 
     def _get_soup(self,url):
-        header=self._randomized_UA()
+        header=self._request_headers()
 
         req=requests.get(url,headers=header)
 
@@ -399,7 +441,7 @@ class RedfinScraper:
 
         soup=BeautifulSoup(req_text,'html.parser')
 
-        return (url,soup)
+        return (url,soup,req_text)
 
 
 
@@ -419,7 +461,7 @@ class RedfinScraper:
 
 
     def _get_API_response(self,url):
-        header=self._randomized_UA()
+        header=self._request_headers(api=True)
 
         req=requests.get(url,headers=header)
 
@@ -433,12 +475,51 @@ class RedfinScraper:
         df_list=[]
 
         for response in api_responses:
-            csv_stream = io.StringIO(response.content.decode('utf-8'))
-            reader = csv.DictReader(csv_stream)
-            df=pd.DataFrame(reader)
+            response_text = response.content.decode('utf-8')
+
+            if response_text.startswith("{}&&"):
+                df=self._json_response_to_dataframe(response_text)
+            else:
+                csv_stream = io.StringIO(response_text)
+                reader = csv.DictReader(csv_stream)
+                df=pd.DataFrame(reader)
             df_list.append(df)
 
         return df_list
+
+
+    def _extract_api_link(self, html:str, soup:BeautifulSoup):
+        # Newer Redfin pages embed the GIS endpoint in initial page state
+        # instead of exposing a direct href on the download control.
+        gis_match = re.search(
+            r'"(\\u002Fstingray\\u002Fapi\\u002Fgis\?[^"]+)":\{"url":"\\u002Fstingray\\u002Fapi\\u002Fgis',
+            html,
+        )
+        if gis_match:
+            return gis_match.group(1).encode('utf-8').decode('unicode_escape').replace('\\/', '/')
+
+        target=soup.find(rsc.REDFIN_API_CLASS_DEF[0],rsc.REDFIN_API_CLASS_DEF[1])[rsc.REDFIN_API_CLASS_ID]
+        return target
+
+
+    def _json_response_to_dataframe(self, response_text:str):
+        if response_text.startswith("{}&&"):
+            response_text = response_text[4:]
+
+        payload = json.loads(response_text)
+        homes = payload.get("payload", {}).get("originalHomes", {}).get("homes", [])
+
+        if homes==[]:
+            return pd.DataFrame()
+
+        df = pd.json_normalize(homes, sep='.')
+
+        if 'url' in df.columns:
+            df['url'] = df['url'].apply(
+                lambda path: rsc.REDFIN_URL.format(path) if isinstance(path, str) and path.startswith('/') else path
+            )
+
+        return df
 
 
 
@@ -464,5 +545,3 @@ class RedfinScraper:
 
 
     
-
-
