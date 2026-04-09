@@ -1,7 +1,8 @@
 from pathlib import Path
+import sys
 
 from redfin_scraper import RedfinScraper
-from pipeline_context import output_path
+from pipeline_context import output_path, write_run_inputs
 
 
 def _recent_log_text() -> str:
@@ -15,6 +16,8 @@ def _recent_log_text() -> str:
 
 
 def main() -> int:
+    write_run_inputs(["python3", "run.py"] + sys.argv[1:], command_stem="command_used")
+
     scraper = RedfinScraper()
     scraper.setup()
     df = scraper.scrape()

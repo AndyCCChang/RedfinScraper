@@ -1,7 +1,7 @@
 import os
 import subprocess
 import sys
-from pipeline_context import RUN_DIR_ENV, RUN_TS_ENV, start_new_run_context
+from pipeline_context import RUN_DIR_ENV, RUN_TS_ENV, start_new_run_context, write_run_inputs
 
 
 STEPS = [
@@ -18,6 +18,7 @@ def main() -> int:
     cli_args = sys.argv[1:]
     steps = list(STEPS)
     run_dir, run_timestamp = start_new_run_context()
+    write_run_inputs(["python3", "all_in_one.py"] + cli_args, command_stem="user_command_used")
     env = os.environ.copy()
     env[RUN_DIR_ENV] = str(run_dir)
     env[RUN_TS_ENV] = run_timestamp
@@ -48,6 +49,10 @@ def main() -> int:
     print("\nPipeline complete.")
     print(f"Run output folder: {run_dir.resolve()}")
     print("Generated files may include:")
+    print(f"- user_command_used_{run_timestamp}.txt")
+    print(f"- command_used_{run_timestamp}.txt")
+    print(f"- config_used_{run_timestamp}.json")
+    print(f"- search_context_{run_timestamp}.json")
     print(f"- results_{run_timestamp}.csv")
     print(f"- analysis_ready_{run_timestamp}.csv")
     print("- property_photos/listings/... (downloaded listing photo folders)")

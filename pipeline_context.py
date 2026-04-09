@@ -1,4 +1,5 @@
 from datetime import datetime
+import json
 import os
 from pathlib import Path
 from typing import Optional, Tuple
@@ -198,3 +199,25 @@ def current_run_dir() -> Optional[Path]:
         return run_dir
     except FileNotFoundError:
         return None
+
+
+def write_run_inputs(command_args, config_path: Path = Path("config.json"), command_stem: str = "command_used") -> None:
+    run_dir, timestamp = ensure_run_context(create=True)
+
+    command_path = run_dir / f"{command_stem}_{timestamp}.txt"
+    command_text = " ".join(command_args).strip()
+    command_path.write_text(command_text + "\n", encoding="utf-8")
+
+    if config_path.exists():
+        config_output_path = run_dir / f"config_used_{timestamp}.json"
+        config_output_path.write_text(config_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+    summary_path = run_dir / f"search_context_{timestamp}.json"
+    summary = {
+        "timestamp": timestamp,
+        "run_dir": str(run_dir.resolve()),
+        "command_used": command_args,
+        "command_record": str(command_path.resolve()),
+        "config_snapshot": str((run_dir / f"config_used_{timestamp}.json").resolve()) if config_path.exists() else None,
+    }
+    summary_path.write_text(json.dumps(summary, indent=2), encoding="utf-8")
