@@ -1,9 +1,7 @@
 {
   "zip_database_path": "./zip_code_database.csv",
   "city_states": [
-    "Cupertino, CA",
-    "Santa Clara, CA",
-    "Sunnyvale, CA"
+    "Fremont, CA"
   ],
   "zip_codes": [],
   "multiprocessing": "False",

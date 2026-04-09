@@ -507,7 +507,13 @@ class RedfinScraper:
             response_text = response_text[4:]
 
         payload = json.loads(response_text)
-        homes = payload.get("payload", {}).get("originalHomes", {}).get("homes", [])
+        payload_body = payload.get("payload", {})
+        # Redfin has used both payload.originalHomes.homes and payload.homes
+        # across different ZIP pages, so support both before treating the
+        # response as empty.
+        homes = payload_body.get("originalHomes", {}).get("homes", [])
+        if homes == []:
+            homes = payload_body.get("homes", [])
 
         if homes==[]:
             return pd.DataFrame()

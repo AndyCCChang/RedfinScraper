@@ -131,6 +131,8 @@ This will generate:
 
 > Redfin may change page structure or apply request blocking over time, which can affect scraping reliability  
 
+> Redfin's GIS JSON shape can also vary by page. This repo currently handles both `payload.originalHomes.homes` and `payload.homes`, but future changes may still require scraper updates  
+
 ### Recommendations
 > Requests for large amounts of data (# of zip codes > 2,000) should be split into separate requests  
 

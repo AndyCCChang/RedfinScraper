@@ -264,23 +264,23 @@ def render_run_panel(user_command: str, config_snapshot: dict, budget_filters: d
     <div class="config-form-grid">
       <div class="config-form-card">
         <label class="panel-label" for="cmd-min-price">Min price</label>
-        <input id="cmd-min-price" class="text-input" type="text" value="{escape(str(budget_min))}">
+        <input id="cmd-min-price" class="text-input" type="number" step="1000" min="0" inputmode="numeric" value="{escape(str(budget_min))}">
       </div>
       <div class="config-form-card">
         <label class="panel-label" for="cmd-max-price">Max price</label>
-        <input id="cmd-max-price" class="text-input" type="text" value="{escape(str(budget_max))}">
+        <input id="cmd-max-price" class="text-input" type="number" step="1000" min="0" inputmode="numeric" value="{escape(str(budget_max))}">
       </div>
       <div class="config-form-card">
         <label class="panel-label" for="cmd-min-beds">Min beds</label>
-        <input id="cmd-min-beds" class="text-input" type="text" value="{escape(str(min_beds))}">
+        <input id="cmd-min-beds" class="text-input" type="number" step="1" min="0" inputmode="numeric" value="{escape(str(min_beds))}">
       </div>
       <div class="config-form-card">
         <label class="panel-label" for="cmd-min-baths">Min baths</label>
-        <input id="cmd-min-baths" class="text-input" type="text" value="{escape(str(min_baths))}">
+        <input id="cmd-min-baths" class="text-input" type="number" step="0.5" min="0" inputmode="decimal" value="{escape(str(min_baths))}">
       </div>
       <div class="config-form-card">
         <label class="panel-label" for="cmd-min-lot-size">Min lot size</label>
-        <input id="cmd-min-lot-size" class="text-input" type="text" value="{escape(str(min_lot_size))}">
+        <input id="cmd-min-lot-size" class="text-input" type="number" step="100" min="0" inputmode="numeric" value="{escape(str(min_lot_size))}">
       </div>
       <div class="config-form-card">
         <label class="panel-label">Property types</label>
@@ -303,11 +303,11 @@ def render_run_panel(user_command: str, config_snapshot: dict, budget_filters: d
       </div>
       <div class="config-form-card">
         <label class="panel-label" for="cmd-min-elementary-school-score">Min elementary rating</label>
-        <input id="cmd-min-elementary-school-score" class="text-input" type="text" value="{escape(str(min_elementary))}">
+        <input id="cmd-min-elementary-school-score" class="text-input" type="number" step="1" min="0" max="10" inputmode="numeric" value="{escape(str(min_elementary))}">
       </div>
       <div class="config-form-card">
         <label class="panel-label" for="cmd-min-high-school-score">Min high rating</label>
-        <input id="cmd-min-high-school-score" class="text-input" type="text" value="{escape(str(min_high))}">
+        <input id="cmd-min-high-school-score" class="text-input" type="number" step="1" min="0" max="10" inputmode="numeric" value="{escape(str(min_high))}">
       </div>
       <div class="config-form-card config-form-card-wide">
         <label class="panel-label" for="cmd-school-names">School names</label>
@@ -357,11 +357,11 @@ def render_run_panel(user_command: str, config_snapshot: dict, budget_filters: d
       </div>
       <div class="config-form-card">
         <label class="panel-label" for="config-lat-tuner">Lat tuner</label>
-        <input id="config-lat-tuner" class="text-input" type="text" value="{escape(str(lat_tuner))}">
+        <input id="config-lat-tuner" class="text-input" type="number" step="0.1" min="0" inputmode="decimal" value="{escape(str(lat_tuner))}">
       </div>
       <div class="config-form-card">
         <label class="panel-label" for="config-lon-tuner">Lon tuner</label>
-        <input id="config-lon-tuner" class="text-input" type="text" value="{escape(str(lon_tuner))}">
+        <input id="config-lon-tuner" class="text-input" type="number" step="0.1" min="0" inputmode="decimal" value="{escape(str(lon_tuner))}">
       </div>
     </div>
     <label class="panel-label" for="config-json">Config JSON</label>
@@ -454,13 +454,13 @@ def build_html(
     run_command: str,
 ) -> str:
     run_panel_section = render_run_panel(user_command, config_snapshot, budget_filters)
-    search_context_section = render_search_context(
-        search_context,
-        config_snapshot,
-        user_command,
-        run_command,
-        budget_filters,
-    )
+    report_analysis = budget if not budget.empty else analysis
+    report_top_deals = budget if not budget.empty else top_deals
+    if not budget.empty and not school_homes.empty and "url" in school_homes.columns and "url" in budget.columns:
+        filtered_urls = set(budget["url"].dropna().astype(str))
+        report_school_homes = school_homes[school_homes["url"].astype(str).isin(filtered_urls)].copy()
+    else:
+        report_school_homes = school_homes
     budget_section = ""
     if not budget.empty:
         budget_section = render_table(
@@ -493,9 +493,9 @@ def build_html(
         )
 
     school_section = ""
-    if not school_homes.empty:
+    if not report_school_homes.empty:
         school_section = render_table(
-            school_homes.head(15),
+            report_school_homes.head(15),
             "School-Focused Homes",
             [
                 "full_address",
@@ -863,13 +863,12 @@ def build_html(
     </div>
 
     <div class="cards">
-      {render_summary_cards(analysis)}
+      {render_summary_cards(report_analysis)}
     </div>
 
     {run_panel_section}
-    {search_context_section}
-    {render_table(top_deals.head(15), "Top Deals", ["full_address", "photo_url", "zip", "price", "sqft", "price_per_sqft", "beds", "baths", "days_on_market", "deal_score", "url"], link_column="url")}
-    {render_table(analysis.head(15), "Latest Listings Snapshot", ["full_address", "photo_url", "zip", "property_type", "price", "sqft", "lot_size", "beds", "baths", "elementary_school_name", "elementary_school_rating", "middle_school_name", "middle_school_rating", "high_school_name", "high_school_rating", "garage_spaces", "parking_spaces", "days_on_market", "url"], link_column="url")}
+    {render_table(report_top_deals.head(15), "Top Deals", ["full_address", "photo_url", "zip", "price", "sqft", "price_per_sqft", "beds", "baths", "days_on_market", "deal_score", "url"], link_column="url")}
+    {render_table(report_analysis.head(15), "Latest Listings Snapshot", ["full_address", "photo_url", "zip", "property_type", "price", "sqft", "lot_size", "beds", "baths", "elementary_school_name", "elementary_school_rating", "middle_school_name", "middle_school_rating", "high_school_name", "high_school_rating", "garage_spaces", "parking_spaces", "days_on_market", "url"], link_column="url")}
     {school_section}
     {render_table(zip_compare, "Zip Comparison", ["zip", "listings", "median_price", "avg_price", "median_sqft", "avg_price_per_sqft", "median_price_per_sqft", "median_days_on_market", "avg_beds", "avg_baths"])}
     {price_changes_section}
