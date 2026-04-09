@@ -2,6 +2,7 @@ import json
 
 import pandas as pd
 import requests
+from photo_utils import fetch_listing_photo_urls
 from pipeline_context import (
     output_path,
     resolve_input_path,
@@ -249,6 +250,28 @@ def fetch_redfin_school_ratings(df: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(records, index=df.index)
 
 
+def fetch_redfin_photo_urls(df: pd.DataFrame) -> pd.Series:
+    if "url" not in df.columns:
+        return pd.Series(index=df.index, dtype="object")
+
+    session = requests.Session()
+    photo_urls = []
+
+    for _, row in df.iterrows():
+        listing_url = row.get("url")
+        if not isinstance(listing_url, str) or not listing_url.startswith("http"):
+            photo_urls.append(pd.NA)
+            continue
+
+        try:
+            urls = fetch_listing_photo_urls(listing_url, session=session, timeout=20)
+            photo_urls.append(urls[0] if urls else pd.NA)
+        except Exception:
+            photo_urls.append(pd.NA)
+
+    return pd.Series(photo_urls, index=df.index, dtype="object")
+
+
 def main() -> int:
     input_path = resolve_input_path("results", ".csv")
     output_csv_path = output_path("analysis_ready", ".csv", create=True)
@@ -267,6 +290,8 @@ def main() -> int:
     if not school_ratings.empty:
         for column in school_ratings.columns:
             clean[column] = school_ratings[column]
+
+    clean["photo_url"] = fetch_redfin_photo_urls(df)
 
     if "listingRemarks" in df.columns:
         listing_remarks = df["listingRemarks"].fillna("")
@@ -330,6 +355,7 @@ def main() -> int:
         "zip",
         "neighborhood",
         "price",
+        "photo_url",
         "price_k",
         "sqft",
         "lot_size",

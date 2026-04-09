@@ -99,6 +99,7 @@ def main() -> int:
 
     columns = [
         "full_address",
+        "photo_url",
         "zip",
         "price",
         "sqft",

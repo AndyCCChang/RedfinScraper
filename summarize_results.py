@@ -23,6 +23,7 @@ def build_top_deals(df: pd.DataFrame) -> pd.DataFrame:
 
     columns = [
         "full_address",
+        "photo_url",
         "zip",
         "price",
         "sqft",

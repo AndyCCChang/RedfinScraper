@@ -4,11 +4,13 @@ from pathlib import Path
 from typing import List, Optional
 
 import pandas as pd
+from photo_utils import LISTING_PHOTOS_DIR, listing_key_from_url
 from pipeline_context import ensure_run_context, output_path, resolve_input_path, update_latest_report_pointer
 
 
 COLUMN_LABELS = {
     "full_address": "Address",
+    "photo_url": "Photo",
     "zip": "ZIP",
     "property_type": "Property Type",
     "price": "Price",
@@ -69,6 +71,18 @@ def number(value, digits: int = 0) -> str:
     if pd.isna(value):
         return "-"
     return f"{value:,.{digits}f}"
+
+
+def listing_photo_folder_uri(listing_url: str) -> Optional[str]:
+    if not isinstance(listing_url, str) or not listing_url.startswith("http"):
+        return None
+
+    listing_dir = LISTING_PHOTOS_DIR / listing_key_from_url(listing_url)
+    gallery_path = listing_dir / "index.html"
+    if not gallery_path.exists():
+        return None
+
+    return gallery_path.resolve().as_uri()
 
 
 def render_summary_cards(analysis: pd.DataFrame) -> str:
@@ -170,8 +184,20 @@ def render_table(df: pd.DataFrame, title: str, columns: List[str], link_column: 
             if link_column and col == link_column and isinstance(value, str) and value.startswith("http"):
                 display = "Open"
                 cells.append(
-                    f'<td{class_attr}><a href="{escape(value)}" target="_blank" rel="noreferrer">{display}</a></td>'
+                    f'<td{class_attr}><a href="{escape(value)}" target="_blank" rel="noreferrer" class="action-button">{display}</a></td>'
                 )
+            elif col == "photo_url" and isinstance(value, str) and value.startswith("http"):
+                album_uri = listing_photo_folder_uri(row.get("url"))
+                if album_uri:
+                    cells.append(
+                        f'<td{class_attr}><a href="{escape(album_uri)}" target="_blank" rel="noreferrer" class="photo-link">'
+                        f'<img src="{escape(value)}" alt="Listing photo" class="listing-photo">'
+                        "</a></td>"
+                    )
+                else:
+                    cells.append(
+                        f'<td{class_attr}><img src="{escape(value)}" alt="Listing photo" class="listing-photo"></td>'
+                    )
             else:
                 cells.append(f"<td{class_attr}>{escape(str(value))}</td>")
         rows.append(f"<tr>{''.join(cells)}</tr>")
@@ -200,6 +226,7 @@ def build_html(
             "Budget Matches",
             [
                 "full_address",
+                "photo_url",
                 "zip",
                 "property_type",
                 "price",
@@ -230,6 +257,7 @@ def build_html(
             "School-Focused Homes",
             [
                 "full_address",
+                "photo_url",
                 "zip",
                 "price",
                 "sqft",
@@ -368,6 +396,29 @@ def build_html(
       text-decoration: none;
       font-weight: bold;
     }}
+    .action-button {{
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 72px;
+      color: white;
+      background: linear-gradient(135deg, #0b6e4f, #1f8d68);
+      padding: 8px 12px;
+      border-radius: 999px;
+      line-height: 1;
+      box-shadow: 0 6px 14px rgba(11, 110, 79, 0.22);
+    }}
+    .listing-photo {{
+      width: 120px;
+      height: 80px;
+      object-fit: cover;
+      border-radius: 10px;
+      display: block;
+      box-shadow: 0 6px 16px rgba(17, 24, 39, 0.14);
+    }}
+    .photo-link {{
+      display: inline-block;
+    }}
     .sticky-link-col {{
       position: sticky;
       right: 0;
@@ -438,8 +489,8 @@ def build_html(
     </div>
 
     {filter_summary_section}
-    {render_table(top_deals.head(15), "Top Deals", ["full_address", "zip", "price", "sqft", "price_per_sqft", "beds", "baths", "days_on_market", "deal_score", "url"], link_column="url")}
-    {render_table(analysis.head(15), "Latest Listings Snapshot", ["full_address", "zip", "property_type", "price", "sqft", "lot_size", "beds", "baths", "elementary_school_name", "elementary_school_rating", "middle_school_name", "middle_school_rating", "high_school_name", "high_school_rating", "garage_spaces", "parking_spaces", "days_on_market", "url"], link_column="url")}
+    {render_table(top_deals.head(15), "Top Deals", ["full_address", "photo_url", "zip", "price", "sqft", "price_per_sqft", "beds", "baths", "days_on_market", "deal_score", "url"], link_column="url")}
+    {render_table(analysis.head(15), "Latest Listings Snapshot", ["full_address", "photo_url", "zip", "property_type", "price", "sqft", "lot_size", "beds", "baths", "elementary_school_name", "elementary_school_rating", "middle_school_name", "middle_school_rating", "high_school_name", "high_school_rating", "garage_spaces", "parking_spaces", "days_on_market", "url"], link_column="url")}
     {school_section}
     {render_table(zip_compare, "Zip Comparison", ["zip", "listings", "median_price", "avg_price", "median_sqft", "avg_price_per_sqft", "median_price_per_sqft", "median_days_on_market", "avg_beds", "avg_baths"])}
     {price_changes_section}

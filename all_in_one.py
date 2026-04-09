@@ -7,6 +7,7 @@ from pipeline_context import RUN_DIR_ENV, RUN_TS_ENV, start_new_run_context
 STEPS = [
     ["python3", "run.py"],
     ["python3", "clean_results.py"],
+    ["python3", "download_property_photos.py"],
     ["python3", "school_filter.py"],
     ["python3", "summarize_results.py"],
     ["python3", "daily_compare.py"],
@@ -49,6 +50,7 @@ def main() -> int:
     print("Generated files may include:")
     print(f"- results_{run_timestamp}.csv")
     print(f"- analysis_ready_{run_timestamp}.csv")
+    print("- property_photos/listings/... (downloaded listing photo folders)")
     print(f"- school_homes_{run_timestamp}.csv")
     print(f"- top_deals_{run_timestamp}.csv")
     print(f"- compare_by_zip_{run_timestamp}.csv")
