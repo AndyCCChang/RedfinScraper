@@ -1,4 +1,5 @@
 from html import escape
+import json
 from pathlib import Path
 from typing import List, Optional
 
@@ -21,6 +22,12 @@ COLUMN_LABELS = {
     "days_on_market": "Days On Market",
     "deal_score": "Deal Score",
     "school_score": "School Score",
+    "elementary_school_name": "Elementary School",
+    "elementary_school_rating": "Elementary Rating",
+    "middle_school_name": "Middle School",
+    "middle_school_rating": "Middle Rating",
+    "high_school_name": "High School",
+    "high_school_rating": "High Rating",
     "school_keywords": "School Signals",
     "matched_schools": "Matched Schools",
     "price_previous": "Previous Price",
@@ -44,6 +51,12 @@ def read_csv_if_exists(path: Path) -> pd.DataFrame:
     if path.exists():
         return pd.read_csv(path)
     return pd.DataFrame()
+
+
+def read_json_if_exists(path: Path) -> dict:
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return {}
 
 
 def money(value) -> str:
@@ -80,6 +93,45 @@ def render_summary_cards(analysis: pd.DataFrame) -> str:
     )
 
 
+def render_filter_summary(filters: dict) -> str:
+    if not filters:
+        return ""
+
+    rows = [
+        ("Budget", f"{money(filters.get('min_price'))} to {money(filters.get('max_price'))}"),
+        ("Min Beds", filters.get("min_beds")),
+        ("Min Baths", filters.get("min_baths")),
+        ("Min Lot Size", number(filters.get("min_lot_size")) if "min_lot_size" in filters else None),
+        ("Min Garage", filters.get("min_garage_spaces")),
+        ("Min Parking", filters.get("min_parking_spaces")),
+        ("Min School Score", filters.get("min_school_score")),
+        ("Min Elementary Rating", filters.get("min_elementary_school_score")),
+        ("Min High Rating", filters.get("min_high_school_score")),
+        ("School Names", ", ".join(filters.get("school_names", [])) if filters.get("school_names") else None),
+        ("Max Price / SqFt", money(filters.get("max_price_per_sqft")) if "max_price_per_sqft" in filters else None),
+        ("Max Days On Market", filters.get("max_days_on_market")),
+        ("Virtual Tour", "Yes" if filters.get("has_virtual_tour") else None),
+        ("Property Types", ", ".join(filters.get("property_types", [])) if filters.get("property_types") else None),
+        ("Included ZIPs", ", ".join(filters.get("include_zips", [])) if filters.get("include_zips") else None),
+        ("Excluded ZIPs", ", ".join(filters.get("exclude_zips", [])) if filters.get("exclude_zips") else None),
+    ]
+
+    items = [
+        f'<div class="filter-item"><span class="filter-key">{escape(str(label))}</span><span class="filter-value">{escape(str(value))}</span></div>'
+        for label, value in rows
+        if value is not None
+    ]
+
+    if not items:
+        return ""
+
+    return (
+        "<section><h2>Filter Summary</h2>"
+        '<div class="filter-grid">%s</div>'
+        "</section>"
+    ) % "".join(items)
+
+
 def render_table(df: pd.DataFrame, title: str, columns: List[str], link_column: Optional[str] = None) -> str:
     if df.empty:
         return f"<section><h2>{escape(title)}</h2><p>No data available.</p></section>"
@@ -93,17 +145,35 @@ def render_table(df: pd.DataFrame, title: str, columns: List[str], link_column: 
         elif "sqft" in col or "days" in col or col.startswith("avg_") or col.startswith("median_"):
             table_df[col] = table_df[col].apply(lambda v: number(v, 2) if "avg_" in col or "median_" in col else number(v))
 
-    headers = "".join(f"<th>{escape(COLUMN_LABELS.get(col, col))}</th>" for col in safe_columns)
+    first_column = safe_columns[0] if safe_columns else None
+    header_cells = []
+    for col in safe_columns:
+        classes = []
+        if col == first_column:
+            classes.append("sticky-first-col")
+        if link_column and col == link_column:
+            classes.append("sticky-link-col")
+        class_attr = f' class="{" ".join(classes)}"' if classes else ""
+        header_cells.append(f"<th{class_attr}>{escape(COLUMN_LABELS.get(col, col))}</th>")
+    headers = "".join(header_cells)
     rows = []
     for _, row in table_df.iterrows():
         cells = []
         for col in safe_columns:
             value = row[col]
+            classes = []
+            if col == first_column:
+                classes.append("sticky-first-col")
+            if link_column and col == link_column:
+                classes.append("sticky-link-col")
+            class_attr = f' class="{" ".join(classes)}"' if classes else ""
             if link_column and col == link_column and isinstance(value, str) and value.startswith("http"):
                 display = "Open"
-                cells.append(f'<td><a href="{escape(value)}" target="_blank" rel="noreferrer">{display}</a></td>')
+                cells.append(
+                    f'<td{class_attr}><a href="{escape(value)}" target="_blank" rel="noreferrer">{display}</a></td>'
+                )
             else:
-                cells.append(f"<td>{escape(str(value))}</td>")
+                cells.append(f"<td{class_attr}>{escape(str(value))}</td>")
         rows.append(f"<tr>{''.join(cells)}</tr>")
 
     return (
@@ -120,7 +190,9 @@ def build_html(
     budget: pd.DataFrame,
     school_homes: pd.DataFrame,
     price_changes: pd.DataFrame,
+    budget_filters: dict,
 ) -> str:
+    filter_summary_section = render_filter_summary(budget_filters)
     budget_section = ""
     if not budget.empty:
         budget_section = render_table(
@@ -136,7 +208,12 @@ def build_html(
                 "price_per_sqft",
                 "beds",
                 "baths",
-                "school_score",
+                "elementary_school_name",
+                "elementary_school_rating",
+                "middle_school_name",
+                "middle_school_rating",
+                "high_school_name",
+                "high_school_rating",
                 "matched_schools",
                 "garage_spaces",
                 "parking_spaces",
@@ -151,7 +228,22 @@ def build_html(
         school_section = render_table(
             school_homes.head(15),
             "School-Focused Homes",
-            ["full_address", "zip", "price", "sqft", "price_per_sqft", "school_score", "school_keywords", "url"],
+            [
+                "full_address",
+                "zip",
+                "price",
+                "sqft",
+                "price_per_sqft",
+                "elementary_school_name",
+                "elementary_school_rating",
+                "middle_school_name",
+                "middle_school_rating",
+                "high_school_name",
+                "high_school_rating",
+                "school_score",
+                "school_keywords",
+                "url",
+            ],
             link_column="url",
         )
 
@@ -190,9 +282,9 @@ def build_html(
       color: var(--ink);
     }}
     .page {{
-      max-width: 1200px;
+      max-width: 1680px;
       margin: 0 auto;
-      padding: 32px 20px 48px;
+      padding: 32px 24px 48px;
     }}
     .hero {{
       background: linear-gradient(135deg, rgba(11,110,79,0.95), rgba(48,86,211,0.86));
@@ -253,14 +345,15 @@ def build_html(
     table {{
       width: 100%;
       border-collapse: collapse;
-      min-width: 760px;
+      min-width: 1200px;
     }}
     th, td {{
-      padding: 10px 12px;
+      padding: 10px 10px;
       border-bottom: 1px solid #eadfcf;
       text-align: left;
       vertical-align: top;
-      font-size: 0.95rem;
+      font-size: 0.9rem;
+      white-space: nowrap;
     }}
     th {{
       position: sticky;
@@ -275,10 +368,56 @@ def build_html(
       text-decoration: none;
       font-weight: bold;
     }}
+    .sticky-link-col {{
+      position: sticky;
+      right: 0;
+      background: #fffaf2;
+      z-index: 2;
+      box-shadow: -8px 0 12px rgba(80, 63, 32, 0.06);
+    }}
+    .sticky-first-col {{
+      position: sticky;
+      left: 0;
+      background: #fffaf2;
+      z-index: 2;
+      box-shadow: 8px 0 12px rgba(80, 63, 32, 0.06);
+    }}
+    th.sticky-link-col {{
+      z-index: 3;
+      background: #f8f1e5;
+    }}
+    th.sticky-first-col {{
+      z-index: 3;
+      background: #f8f1e5;
+    }}
     .footer {{
       margin-top: 18px;
       color: var(--muted);
       font-size: 0.9rem;
+    }}
+    .filter-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }}
+    .filter-item {{
+      background: #fcf7ef;
+      border: 1px solid #eadfcf;
+      border-radius: 14px;
+      padding: 12px 14px;
+    }}
+    .filter-key {{
+      display: block;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }}
+    .filter-value {{
+      display: block;
+      font-size: 1rem;
+      font-weight: bold;
     }}
     @media (max-width: 720px) {{
       .hero h1 {{ font-size: 1.65rem; }}
@@ -298,8 +437,9 @@ def build_html(
       {render_summary_cards(analysis)}
     </div>
 
+    {filter_summary_section}
     {render_table(top_deals.head(15), "Top Deals", ["full_address", "zip", "price", "sqft", "price_per_sqft", "beds", "baths", "days_on_market", "deal_score", "url"], link_column="url")}
-    {render_table(analysis.head(15), "Latest Listings Snapshot", ["full_address", "zip", "property_type", "price", "sqft", "lot_size", "beds", "baths", "garage_spaces", "parking_spaces", "days_on_market", "url"], link_column="url")}
+    {render_table(analysis.head(15), "Latest Listings Snapshot", ["full_address", "zip", "property_type", "price", "sqft", "lot_size", "beds", "baths", "elementary_school_name", "elementary_school_rating", "middle_school_name", "middle_school_rating", "high_school_name", "high_school_rating", "garage_spaces", "parking_spaces", "days_on_market", "url"], link_column="url")}
     {school_section}
     {render_table(zip_compare, "Zip Comparison", ["zip", "listings", "median_price", "avg_price", "median_sqft", "avg_price_per_sqft", "median_price_per_sqft", "median_days_on_market", "avg_beds", "avg_baths"])}
     {price_changes_section}
@@ -317,11 +457,12 @@ def main() -> int:
     top_deals = read_csv_if_exists(resolve_input_path("top_deals", ".csv"))
     zip_compare = read_csv_if_exists(resolve_input_path("compare_by_zip", ".csv"))
     budget = read_csv_if_exists(resolve_input_path("budget_matches", ".csv"))
+    budget_filters = read_json_if_exists(resolve_input_path("budget_filters", ".json"))
     school_homes = read_csv_if_exists(resolve_input_path("school_homes", ".csv"))
     price_changes = read_csv_if_exists(resolve_input_path("price_changes", ".csv"))
     output_html_path = output_path("report", ".html", create=True)
 
-    html = build_html(analysis, top_deals, zip_compare, budget, school_homes, price_changes)
+    html = build_html(analysis, top_deals, zip_compare, budget, school_homes, price_changes, budget_filters)
     output_html_path.write_text(html, encoding="utf-8")
     update_latest_report_pointer(run_dir, timestamp)
 

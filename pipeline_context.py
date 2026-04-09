@@ -8,6 +8,9 @@ RUNS_DIR = Path("runs")
 CURRENT_RUN_FILE = RUNS_DIR / ".current_run"
 LATEST_RUN_LINK = RUNS_DIR / "latest"
 LATEST_REPORT_LINK = Path("latest_report.html")
+LATEST_BUDGET_MATCHES_LINK = Path("latest_budget_matches.csv")
+LATEST_ANALYSIS_READY_LINK = Path("latest_analysis_ready.csv")
+LATEST_SCHOOL_HOMES_LINK = Path("latest_school_homes.csv")
 RUN_DIR_ENV = "REDFIN_RUN_OUTPUT_DIR"
 RUN_TS_ENV = "REDFIN_RUN_TIMESTAMP"
 
@@ -38,20 +41,89 @@ def _update_latest_pointer(run_dir: Path) -> None:
 
 
 def update_latest_report_pointer(run_dir: Path, timestamp: str) -> None:
-    report_path = (run_dir / f"report_{timestamp}.html").resolve()
-    if not report_path.exists():
+    update_latest_file_pointer(run_dir, timestamp, "report", ".html", LATEST_REPORT_LINK, Path("latest_report.txt"))
+
+
+def update_latest_budget_matches_pointer(run_dir: Path, timestamp: str) -> None:
+    update_latest_file_pointer(
+        run_dir,
+        timestamp,
+        "budget_matches",
+        ".csv",
+        LATEST_BUDGET_MATCHES_LINK,
+        Path("latest_budget_matches.txt"),
+    )
+
+
+def update_latest_budget_matches_pointer_from_path(target_path: Path) -> None:
+    target_path = target_path.resolve()
+    if not target_path.exists():
         return
 
-    if LATEST_REPORT_LINK.exists() or LATEST_REPORT_LINK.is_symlink():
-        if LATEST_REPORT_LINK.is_dir() and not LATEST_REPORT_LINK.is_symlink():
+    if LATEST_BUDGET_MATCHES_LINK.exists() or LATEST_BUDGET_MATCHES_LINK.is_symlink():
+        if LATEST_BUDGET_MATCHES_LINK.is_dir() and not LATEST_BUDGET_MATCHES_LINK.is_symlink():
             return
-        LATEST_REPORT_LINK.unlink()
+        LATEST_BUDGET_MATCHES_LINK.unlink()
 
     try:
-        LATEST_REPORT_LINK.symlink_to(report_path)
+        LATEST_BUDGET_MATCHES_LINK.symlink_to(target_path)
     except OSError:
-        fallback = Path("latest_report.txt")
-        fallback.write_text(str(report_path), encoding="utf-8")
+        Path("latest_budget_matches.txt").write_text(str(target_path), encoding="utf-8")
+
+
+def update_latest_analysis_ready_pointer_from_path(target_path: Path) -> None:
+    update_latest_file_pointer_from_path(
+        target_path,
+        LATEST_ANALYSIS_READY_LINK,
+        Path("latest_analysis_ready.txt"),
+    )
+
+
+def update_latest_school_homes_pointer_from_path(target_path: Path) -> None:
+    update_latest_file_pointer_from_path(
+        target_path,
+        LATEST_SCHOOL_HOMES_LINK,
+        Path("latest_school_homes.txt"),
+    )
+
+
+def update_latest_file_pointer(
+    run_dir: Path,
+    timestamp: str,
+    stem: str,
+    suffix: str,
+    link_path: Path,
+    fallback_path: Path,
+) -> None:
+    target_path = (run_dir / f"{stem}_{timestamp}{suffix}").resolve()
+    if not target_path.exists():
+        return
+
+    if link_path.exists() or link_path.is_symlink():
+        if link_path.is_dir() and not link_path.is_symlink():
+            return
+        link_path.unlink()
+
+    try:
+        link_path.symlink_to(target_path)
+    except OSError:
+        fallback_path.write_text(str(target_path), encoding="utf-8")
+
+
+def update_latest_file_pointer_from_path(target_path: Path, link_path: Path, fallback_path: Path) -> None:
+    target_path = target_path.resolve()
+    if not target_path.exists():
+        return
+
+    if link_path.exists() or link_path.is_symlink():
+        if link_path.is_dir() and not link_path.is_symlink():
+            return
+        link_path.unlink()
+
+    try:
+        link_path.symlink_to(target_path)
+    except OSError:
+        fallback_path.write_text(str(target_path), encoding="utf-8")
 
 
 def ensure_run_context(create: bool = False) -> Tuple[Path, str]:

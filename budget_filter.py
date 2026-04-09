@@ -1,8 +1,8 @@
-from pathlib import Path
 import argparse
+import json
 
 import pandas as pd
-from pipeline_context import output_path, resolve_input_path
+from pipeline_context import ensure_run_context, output_path, resolve_input_path, update_latest_budget_matches_pointer_from_path
 
 
 def parse_budget_arg(raw: str) -> float:
@@ -22,6 +22,8 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--min-garage-spaces", type=float, default=None)
     parser.add_argument("--min-parking-spaces", type=float, default=None)
     parser.add_argument("--min-school-score", type=float, default=None)
+    parser.add_argument("--min-elementary-school-score", type=float, default=None)
+    parser.add_argument("--min-high-school-score", type=float, default=None)
     parser.add_argument("--school-names", nargs="+", default=None)
     parser.add_argument("--max-price-per-sqft", type=float, default=None)
     parser.add_argument("--max-days-on-market", type=float, default=None)
@@ -32,10 +34,43 @@ def build_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def build_filter_summary(args) -> dict:
+    summary = {
+        "min_price": args.min_price,
+        "max_price": args.max_price,
+    }
+
+    optional_fields = {
+        "min_beds": args.min_beds,
+        "min_baths": args.min_baths,
+        "min_lot_size": args.min_lot_size,
+        "min_garage_spaces": args.min_garage_spaces,
+        "min_parking_spaces": args.min_parking_spaces,
+        "min_school_score": args.min_school_score,
+        "min_elementary_school_score": args.min_elementary_school_score,
+        "min_high_school_score": args.min_high_school_score,
+        "school_names": args.school_names,
+        "max_price_per_sqft": args.max_price_per_sqft,
+        "max_days_on_market": args.max_days_on_market,
+        "has_virtual_tour": args.has_virtual_tour,
+        "property_types": args.property_types,
+        "include_zips": args.include_zips,
+        "exclude_zips": args.exclude_zips,
+    }
+
+    for key, value in optional_fields.items():
+        if value is not None and value != [] and value is not False:
+            summary[key] = value
+
+    return summary
+
+
 def main() -> int:
+    run_dir, timestamp = ensure_run_context(create=True)
     input_path = resolve_input_path("analysis_ready", ".csv")
     results_path = resolve_input_path("results", ".csv")
     output_csv_path = output_path("budget_matches", ".csv", create=True)
+    summary_json_path = output_path("budget_filters", ".json", create=True)
 
     if not input_path.exists():
         print(f"Missing input file: {input_path.resolve()}")
@@ -73,6 +108,14 @@ def main() -> int:
         filtered["parking_spaces"] = pd.to_numeric(filtered["parking_spaces"], errors="coerce")
     if "school_score" in filtered.columns:
         filtered["school_score"] = pd.to_numeric(filtered["school_score"], errors="coerce")
+    if "elementary_school_score" in filtered.columns:
+        filtered["elementary_school_score"] = pd.to_numeric(filtered["elementary_school_score"], errors="coerce")
+    if "elementary_school_rating" in filtered.columns:
+        filtered["elementary_school_rating"] = pd.to_numeric(filtered["elementary_school_rating"], errors="coerce")
+    if "high_school_score" in filtered.columns:
+        filtered["high_school_score"] = pd.to_numeric(filtered["high_school_score"], errors="coerce")
+    if "high_school_rating" in filtered.columns:
+        filtered["high_school_rating"] = pd.to_numeric(filtered["high_school_rating"], errors="coerce")
     filtered["price_per_sqft"] = pd.to_numeric(filtered["price_per_sqft"], errors="coerce")
     filtered["days_on_market"] = pd.to_numeric(filtered["days_on_market"], errors="coerce")
     if "zip" in filtered.columns:
@@ -105,6 +148,16 @@ def main() -> int:
 
     if args.min_school_score is not None and "school_score" in filtered.columns:
         filtered = filtered[filtered["school_score"].fillna(0) >= args.min_school_score].copy()
+
+    if args.min_elementary_school_score is not None and "elementary_school_rating" in filtered.columns:
+        filtered = filtered[
+            filtered["elementary_school_rating"].fillna(0) >= args.min_elementary_school_score
+        ].copy()
+
+    if args.min_high_school_score is not None and "high_school_rating" in filtered.columns:
+        filtered = filtered[
+            filtered["high_school_rating"].fillna(0) >= args.min_high_school_score
+        ].copy()
 
     if args.school_names is not None:
         school_names = [name.strip() for name in args.school_names if name.strip()]
@@ -153,6 +206,8 @@ def main() -> int:
     )
 
     filtered.to_csv(output_csv_path, index=False)
+    summary_json_path.write_text(json.dumps(build_filter_summary(args), indent=2), encoding="utf-8")
+    update_latest_budget_matches_pointer_from_path(output_csv_path)
 
     print(
         f"Saved {len(filtered)} rows between ${min_price:,.0f} and ${max_price:,.0f} "
@@ -170,6 +225,10 @@ def main() -> int:
         print(f"Minimum parking spaces: {args.min_parking_spaces:,.0f}")
     if args.min_school_score is not None:
         print(f"Minimum school score: {args.min_school_score:,.0f}")
+    if args.min_elementary_school_score is not None:
+        print(f"Minimum elementary school score: {args.min_elementary_school_score:,.0f}")
+    if args.min_high_school_score is not None:
+        print(f"Minimum high school score: {args.min_high_school_score:,.0f}")
     if args.school_names is not None:
         print(f"School names: {', '.join(args.school_names)}")
     if args.max_price_per_sqft is not None:

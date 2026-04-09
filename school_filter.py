@@ -1,9 +1,12 @@
-from pathlib import Path
 import re
 import sys
 
 import pandas as pd
-from pipeline_context import output_path, resolve_input_path
+from pipeline_context import (
+    output_path,
+    resolve_input_path,
+    update_latest_school_homes_pointer_from_path,
+)
 
 
 KEYWORDS = {
@@ -115,6 +118,8 @@ def main() -> int:
     school_homes = school_homes[columns].sort_values(sort_columns, ascending=ascending, na_position="last")
 
     school_homes.to_csv(selected_output_path, index=False)
+    if not school_names:
+        update_latest_school_homes_pointer_from_path(selected_output_path)
 
     print(f"Saved {len(school_homes)} school-focused listings to {selected_output_path.resolve()}")
     print(school_homes.head(15).to_string(index=False))

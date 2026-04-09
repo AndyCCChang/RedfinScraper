@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Redfin Scraper Report</title>
+  <style>
+    :root {
+      --bg: #f7f3ea;
+      --paper: #fffdf8;
+      --ink: #1f2933;
+      --muted: #5b6470;
+      --accent: #0b6e4f;
+      --accent-soft: #d8efe6;
+      --border: #dccfb8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, #fff7df 0, transparent 28%),
+        linear-gradient(180deg, #f7f3ea 0%, #efe6d6 100%);
+      color: var(--ink);
+    }
+    .page {
+      max-width: 1680px;
+      margin: 0 auto;
+      padding: 32px 24px 48px;
+    }
+    .hero {
+      background: linear-gradient(135deg, rgba(11,110,79,0.95), rgba(48,86,211,0.86));
+      color: white;
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 18px 50px rgba(17, 24, 39, 0.16);
+    }
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+      line-height: 1.1;
+    }
+    .hero p {
+      margin: 0;
+      color: rgba(255,255,255,0.88);
+      max-width: 780px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin: 22px 0 28px;
+    }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(80, 63, 32, 0.08);
+    }
+    .label {
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .value {
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+    section {
+      margin-top: 28px;
+      background: rgba(255, 253, 248, 0.88);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(80, 63, 32, 0.06);
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 1.35rem;
+    }
+    .table-wrap {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1200px;
+    }
+    th, td {
+      padding: 10px 10px;
+      border-bottom: 1px solid #eadfcf;
+      text-align: left;
+      vertical-align: top;
+      font-size: 0.9rem;
+      white-space: nowrap;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: #f8f1e5;
+    }
+    tr:hover td {
+      background: #fcf7ef;
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .sticky-link-col {
+      position: sticky;
+      right: 0;
+      background: #fffaf2;
+      z-index: 2;
+      box-shadow: -8px 0 12px rgba(80, 63, 32, 0.06);
+    }
+    .sticky-first-col {
+      position: sticky;
+      left: 0;
+      background: #fffaf2;
+      z-index: 2;
+      box-shadow: 8px 0 12px rgba(80, 63, 32, 0.06);
+    }
+    th.sticky-link-col {
+      z-index: 3;
+      background: #f8f1e5;
+    }
+    th.sticky-first-col {
+      z-index: 3;
+      background: #f8f1e5;
+    }
+    .footer {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .filter-item {
+      background: #fcf7ef;
+      border: 1px solid #eadfcf;
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+    .filter-key {
+      display: block;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    .filter-value {
+      display: block;
+      font-size: 1rem;
+      font-weight: bold;
+    }
+    @media (max-width: 720px) {
+      .hero h1 { font-size: 1.65rem; }
+      .page { padding: 20px 14px 36px; }
+      section { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <h1>Redfin Market Snapshot</h1>
+      <p>Use this page to scan the current market, spot the most attractive listings, and compare nearby zip codes without digging through raw CSV files.</p>
+    </div>
+
+    <div class="cards">
+      <div class="card"><div class="label">Total Listings</div><div class="value">85</div></div><div class="card"><div class="label">Median Price</div><div class="value">$1,150,000</div></div><div class="card"><div class="label">Avg Price / SqFt</div><div class="value">$753</div></div><div class="card"><div class="label">Median Days On Market</div><div class="value">18</div></div>
+    </div>
+
+    <section><h2>Filter Summary</h2><div class="filter-grid"><div class="filter-item"><span class="filter-key">Budget</span><span class="filter-value">$800,000 to $1,800,000</span></div><div class="filter-item"><span class="filter-key">Min Beds</span><span class="filter-value">3.0</span></div><div class="filter-item"><span class="filter-key">Property Types</span><span class="filter-value">house</span></div></div></section>
+    <section><h2>Top Deals</h2><div class="table-wrap"><table><thead><tr><th class="sticky-first-col">Address</th><th>ZIP</th><th>Price</th><th>SqFt</th><th>Price / SqFt</th><th>Beds</th><th>Baths</th><th>Days On Market</th><th>Deal Score</th><th class="sticky-link-col">Link</th></tr></thead><tbody><tr><td class="sticky-first-col">6130 Monterey Rd #203, San Jose, CA</td><td>95138</td><td>$485,000</td><td>1,768</td><td>$274</td><td>3.0</td><td>2.0</td><td>40</td><td>288.32</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/6130-Monterey-Rd-95138/unit-203/home/776667" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1352 Carnelian Dr, San Jose, CA</td><td>95122</td><td>$1,325,000</td><td>3,214</td><td>$412</td><td>8.0</td><td>4.0</td><td>11</td><td>416.11</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1352-Carnelian-Dr-95122/home/929116" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1424 Carnelian Dr, San Jose, CA</td><td>95122</td><td>$1,450,000</td><td>3,214</td><td>$451</td><td>8.0</td><td>4.0</td><td>72</td><td>476.35</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1424-Carnelian-Dr-95122/home/1495660" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1363 Mcquesten Dr Unit C, San Jose, CA</td><td>95122</td><td>$575,000</td><td>1,150</td><td>$500</td><td>3.0</td><td>1.5</td><td>16</td><td>505.6</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1363-McQuesten-Dr-95122/unit-C/home/1742166" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">7108 Coral Gables Cir, San Jose, CA</td><td>95139</td><td>$899,000</td><td>1,656</td><td>$543</td><td>4.0</td><td>3.0</td><td>25</td><td>551.62</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/7108-Coral-Gables-Cir-95139/home/558471" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">7062 Cypress Point Ct, San Jose, CA</td><td>95139</td><td>$899,000</td><td>1,656</td><td>$543</td><td>3.0</td><td>2.5</td><td>46</td><td>558.97</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/7062-Cypress-Point-Ct-95139/home/1256384" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1395 Mcquesten Dr Unit D, San Jose, CA</td><td>95122</td><td>$488,888</td><td>876</td><td>$558</td><td>2.0</td><td>1.0</td><td>12</td><td>562.29</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1395-McQuesten-Dr-95122/unit-D/home/1038415" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">38 N Almaden Blvd #119, San Jose, CA</td><td>95110</td><td>$849,000</td><td>1,525</td><td>$557</td><td>1.0</td><td>1.5</td><td>16</td><td>562.32</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/38-N-Almaden-Blvd-95110/unit-119/home/17288137" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1092 Indian Summer Ct #14, San Jose, CA</td><td>95122</td><td>$595,000</td><td>1,056</td><td>$563</td><td>2.0</td><td>2.0</td><td>1</td><td>563.8</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1092-Indian-Summer-Ct-95122/unit-14/home/1711524" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1710 Alder Creek Ct, San Jose, CA</td><td>95148</td><td>$999,800</td><td>1,780</td><td>$562</td><td>4.0</td><td>2.5</td><td>20</td><td>568.69</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1710-Alder-Creek-Ct-95148/home/1123937" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2130 Pastoral Loop, San Jose, CA</td><td>95122</td><td>$1,729,000</td><td>3,090</td><td>$560</td><td>3.0</td><td>3.0</td><td>27</td><td>569.0</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2130-Pastoral-Loop-95122/home/167534644" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">88 E San Fernando St #303, San Jose, CA</td><td>95113</td><td>$760,000</td><td>1,317</td><td>$577</td><td>2.0</td><td>1.5</td><td>29</td><td>587.22</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/88-E-San-Fernando-St-95113/unit-303/home/23048907" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2315 Warfield Way Unit B, San Jose, CA</td><td>95122</td><td>$499,999</td><td>885</td><td>$565</td><td>2.0</td><td>1.0</td><td>96</td><td>598.57</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2315-Warfield-Way-95122/unit-B/home/1634567" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">6816 Vector Ct, San Jose, CA</td><td>95119</td><td>$1,070,000</td><td>1,822</td><td>$587</td><td>3.0</td><td>3.0</td><td>55</td><td>606.52</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/6816-Vector-Ct-95119/home/176543074" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2149 Pastoral Loop, San Jose, CA</td><td>95122</td><td>$1,728,000</td><td>2,839</td><td>$609</td><td>4.0</td><td>3.5</td><td>41</td><td>623.02</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2149-Pastoral-Loop-95122/home/167534624" target="_blank" rel="noreferrer">Open</a></td></tr></tbody></table></div></section>
+    <section><h2>Latest Listings Snapshot</h2><div class="table-wrap"><table><thead><tr><th class="sticky-first-col">Address</th><th>ZIP</th><th>Property Type</th><th>Price</th><th>SqFt</th><th>Lot Size</th><th>Beds</th><th>Baths</th><th>Elementary School</th><th>Elementary Rating</th><th>Middle School</th><th>Middle Rating</th><th>High School</th><th>High Rating</th><th>Garage</th><th>Parking</th><th>Days On Market</th><th class="sticky-link-col">Link</th></tr></thead><tbody><tr><td class="sticky-first-col">6130 Monterey Rd #203, San Jose, CA</td><td>95138</td><td>condo</td><td>$485,000</td><td>1,768</td><td>nan</td><td>3.0</td><td>2.0</td><td>Ledesma (Rita) Elementary School</td><td>9.0</td><td>Ledesma (Rita) Elementary School</td><td>9.0</td><td>Santa Teresa High School</td><td>8.0</td><td>nan</td><td>nan</td><td>40</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/6130-Monterey-Rd-95138/unit-203/home/776667" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">6130 Monterey Rd #9, San Jose, CA</td><td>95138</td><td>condo</td><td>$399,000</td><td>1,248</td><td>nan</td><td>3.0</td><td>2.0</td><td>Ledesma (Rita) Elementary School</td><td>9.0</td><td>Ledesma (Rita) Elementary School</td><td>9.0</td><td>Santa Teresa High School</td><td>8.0</td><td>nan</td><td>nan</td><td>192</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/6130-Monterey-Rd-95138/unit-9/home/1482529" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1352 Carnelian Dr, San Jose, CA</td><td>95122</td><td>unknown</td><td>$1,325,000</td><td>3,214</td><td>6970.0</td><td>8.0</td><td>4.0</td><td>Santee Elementary School</td><td>4.0</td><td>Santee Elementary School</td><td>4.0</td><td>Yerba Buena High School</td><td>7.0</td><td>nan</td><td>4.0</td><td>11</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1352-Carnelian-Dr-95122/home/929116" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1424 Carnelian Dr, San Jose, CA</td><td>95122</td><td>unknown</td><td>$1,450,000</td><td>3,214</td><td>6250.0</td><td>8.0</td><td>4.0</td><td>Santee Elementary School</td><td>4.0</td><td>Santee Elementary School</td><td>4.0</td><td>Yerba Buena High School</td><td>7.0</td><td>nan</td><td>nan</td><td>72</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1424-Carnelian-Dr-95122/home/1495660" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1363 Mcquesten Dr Unit C, San Jose, CA</td><td>95122</td><td>condo</td><td>$575,000</td><td>1,150</td><td>1150.0</td><td>3.0</td><td>1.5</td><td>Santee Elementary School</td><td>4.0</td><td>Santee Elementary School</td><td>4.0</td><td>Yerba Buena High School</td><td>7.0</td><td>1.0</td><td>1.0</td><td>16</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1363-McQuesten-Dr-95122/unit-C/home/1742166" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">7108 Coral Gables Cir, San Jose, CA</td><td>95139</td><td>townhouse</td><td>$899,000</td><td>1,656</td><td>2112.0</td><td>4.0</td><td>3.0</td><td>Los Paseos Elementary School</td><td>3.0</td><td>Martin Murphy Middle School</td><td>5.0</td><td>Ann Sobrato High School</td><td>10.0</td><td>2.0</td><td>2.0</td><td>25</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/7108-Coral-Gables-Cir-95139/home/558471" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">7062 Cypress Point Ct, San Jose, CA</td><td>95139</td><td>townhouse</td><td>$899,000</td><td>1,656</td><td>2144.0</td><td>3.0</td><td>2.5</td><td>Los Paseos Elementary School</td><td>3.0</td><td>Martin Murphy Middle School</td><td>5.0</td><td>Ann Sobrato High School</td><td>10.0</td><td>2.0</td><td>2.0</td><td>46</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/7062-Cypress-Point-Ct-95139/home/1256384" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">38 N Almaden Blvd #119, San Jose, CA</td><td>95110</td><td>condo</td><td>$849,000</td><td>1,525</td><td>21205.0</td><td>1.0</td><td>1.5</td><td>Horace Mann Elementary School</td><td>3.0</td><td>Herbert Hoover Middle School</td><td>4.0</td><td>Abraham Lincoln High School</td><td>7.0</td><td>0.0</td><td>1.0</td><td>16</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/38-N-Almaden-Blvd-95110/unit-119/home/17288137" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1395 Mcquesten Dr Unit D, San Jose, CA</td><td>95122</td><td>condo</td><td>$488,888</td><td>876</td><td>1114.0</td><td>2.0</td><td>1.0</td><td>Santee Elementary School</td><td>4.0</td><td>Santee Elementary School</td><td>4.0</td><td>Yerba Buena High School</td><td>7.0</td><td>1.0</td><td>1.0</td><td>12</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1395-McQuesten-Dr-95122/unit-D/home/1038415" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2130 Pastoral Loop, San Jose, CA</td><td>95122</td><td>house</td><td>$1,729,000</td><td>3,090</td><td>3287.0</td><td>3.0</td><td>3.0</td><td>John J. Montgomery Elementary School</td><td>5.0</td><td>George V. Leyva Intermediate School</td><td>5.0</td><td>Silver Creek High School</td><td>9.0</td><td>2.0</td><td>2.0</td><td>27</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2130-Pastoral-Loop-95122/home/167534644" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1710 Alder Creek Ct, San Jose, CA</td><td>95148</td><td>townhouse</td><td>$999,800</td><td>1,780</td><td>1975.0</td><td>4.0</td><td>2.5</td><td>Robert Sanders Elementary School</td><td>3.0</td><td>August Boeger Middle School</td><td>5.0</td><td>Mt. Pleasant High School</td><td>4.0</td><td>2.0</td><td>0.0</td><td>20</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1710-Alder-Creek-Ct-95148/home/1123937" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1092 Indian Summer Ct #14, San Jose, CA</td><td>95122</td><td>condo</td><td>$595,000</td><td>1,056</td><td>nan</td><td>2.0</td><td>2.0</td><td>Jeanne R. Meadows Elementary School</td><td>7.0</td><td>Jeanne R. Meadows Elementary School</td><td>7.0</td><td>Yerba Buena High School</td><td>7.0</td><td>nan</td><td>0.0</td><td>1</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1092-Indian-Summer-Ct-95122/unit-14/home/1711524" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2315 Warfield Way Unit B, San Jose, CA</td><td>95122</td><td>townhouse</td><td>$499,999</td><td>885</td><td>nan</td><td>2.0</td><td>1.0</td><td>Stonegate Elementary School</td><td>4.0</td><td>Stonegate Elementary School</td><td>4.0</td><td>Yerba Buena High School</td><td>7.0</td><td>1.0</td><td>1.0</td><td>96</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2315-Warfield-Way-95122/unit-B/home/1634567" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2175 Summerton Dr, San Jose, CA</td><td>95122</td><td>condo</td><td>$429,888</td><td>746</td><td>871.0</td><td>1.0</td><td>1.0</td><td>Jeanne R. Meadows Elementary School</td><td>7.0</td><td>Jeanne R. Meadows Elementary School</td><td>7.0</td><td>Yerba Buena High School</td><td>7.0</td><td>nan</td><td>2.0</td><td>129</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2175-Summerton-Dr-95122/home/1205100" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">88 E San Fernando St #303, San Jose, CA</td><td>95113</td><td>condo</td><td>$760,000</td><td>1,317</td><td>279.0</td><td>2.0</td><td>1.5</td><td>Horace Mann Elementary School</td><td>3.0</td><td>Herbert Hoover Middle School</td><td>4.0</td><td>Abraham Lincoln High School</td><td>7.0</td><td>1.0</td><td>1.0</td><td>29</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/88-E-San-Fernando-St-95113/unit-303/home/23048907" target="_blank" rel="noreferrer">Open</a></td></tr></tbody></table></div></section>
+    <section><h2>School-Focused Homes</h2><div class="table-wrap"><table><thead><tr><th class="sticky-first-col">Address</th><th>ZIP</th><th>Price</th><th>SqFt</th><th>Price / SqFt</th><th>School Score</th><th>School Signals</th><th class="sticky-link-col">Link</th></tr></thead><tbody><tr><td class="sticky-first-col">3261 Everdale Dr, San Jose, CA</td><td>95148</td><td>$1,409,000</td><td>2,075</td><td>$679</td><td>6</td><td>school, schools, top-rated</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/3261-Everdale-Dr-95148/home/1156143" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2651 Ophelia Ave, San Jose, CA</td><td>95122</td><td>$1,150,000</td><td>1,043</td><td>$1,103</td><td>3</td><td>high school, school</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2651-Ophelia-Ave-95122/home/967819" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1363 Mcquesten Dr Unit C, San Jose, CA</td><td>95122</td><td>$575,000</td><td>1,150</td><td>$500</td><td>2</td><td>school, schools</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1363-McQuesten-Dr-95122/unit-C/home/1742166" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2372 Balme Dr, San Jose, CA</td><td>95122</td><td>$429,000</td><td>648</td><td>$662</td><td>2</td><td>school, schools</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2372-Balme-Dr-95122/home/1219060" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">3146 Marten Ave, San Jose, CA</td><td>95148</td><td>$1,449,999</td><td>2,068</td><td>$701</td><td>2</td><td>school, schools</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/3146-Marten-Ave-95148/home/950844" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2955 Vineyard Park Dr, San Jose, CA</td><td>95148</td><td>$1,499,000</td><td>1,955</td><td>$767</td><td>2</td><td>school, schools</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2955-Vineyard-Park-Dr-95148/home/1543769" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">3210 Vintage Crest Dr, San Jose, CA</td><td>95148</td><td>$2,799,000</td><td>3,138</td><td>$892</td><td>2</td><td>school, schools</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/3210-Vintage-Crest-Dr-95148/home/1520622" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">101 Avenida Espana, San Jose, CA</td><td>95139</td><td>$1,430,000</td><td>1,457</td><td>$981</td><td>2</td><td>school, schools</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/101-Avenida-Espana-95139/home/895306" target="_blank" rel="noreferrer">Open</a></td></tr></tbody></table></div></section>
+    <section><h2>Zip Comparison</h2><div class="table-wrap"><table><thead><tr><th class="sticky-first-col">ZIP</th><th>Listings</th><th>Median Price</th><th>Average Price</th><th>Median SqFt</th><th>Average Price / SqFt</th><th>Median Price / SqFt</th><th>Median Days On Market</th><th>Average Beds</th><th>Average Baths</th></tr></thead><tbody><tr><td class="sticky-first-col">95113</td><td>6</td><td>$729,500</td><td>$717,296</td><td>1,100.00</td><td>$679</td><td>$651</td><td>27.00</td><td>1.50</td><td>1.67</td></tr><tr><td class="sticky-first-col">95122</td><td>20</td><td>$1,012,000</td><td>$946,133</td><td>1,152.50</td><td>$689</td><td>$669</td><td>18.00</td><td>3.30</td><td>2.05</td></tr><tr><td class="sticky-first-col">95139</td><td>5</td><td>$1,199,868</td><td>$1,235,174</td><td>1,656.00</td><td>$706</td><td>$717</td><td>26.00</td><td>3.80</td><td>2.60</td></tr><tr><td class="sticky-first-col">95138</td><td>16</td><td>$1,263,944</td><td>$1,383,916</td><td>1,648.50</td><td>$731</td><td>$728</td><td>12.50</td><td>3.25</td><td>2.72</td></tr><tr><td class="sticky-first-col">95110</td><td>4</td><td>$949,500</td><td>$922,250</td><td>1,306.00</td><td>$769</td><td>$823</td><td>18.00</td><td>1.50</td><td>1.62</td></tr><tr><td class="sticky-first-col">95119</td><td>16</td><td>$1,207,400</td><td>$1,210,891</td><td>1,492.00</td><td>$797</td><td>$737</td><td>14.00</td><td>3.06</td><td>2.62</td></tr><tr><td class="sticky-first-col">95148</td><td>18</td><td>$1,688,000</td><td>$3,216,671</td><td>2,052.00</td><td>$850</td><td>$874</td><td>13.00</td><td>4.06</td><td>2.53</td></tr></tbody></table></div></section>
+    
+    <section><h2>Budget Matches</h2><div class="table-wrap"><table><thead><tr><th class="sticky-first-col">Address</th><th>ZIP</th><th>Property Type</th><th>Price</th><th>SqFt</th><th>Lot Size</th><th>Price / SqFt</th><th>Beds</th><th>Baths</th><th>Elementary School</th><th>Elementary Rating</th><th>Middle School</th><th>Middle Rating</th><th>High School</th><th>High Rating</th><th>Garage</th><th>Parking</th><th>Days On Market</th><th class="sticky-link-col">Link</th></tr></thead><tbody><tr><td class="sticky-first-col">2130 Pastoral Loop, San Jose, CA</td><td>95122</td><td>house</td><td>$1,729,000</td><td>3,090</td><td>3287.0</td><td>$560</td><td>3.0</td><td>3.0</td><td>John J. Montgomery Elementary School</td><td>5.0</td><td>George V. Leyva Intermediate School</td><td>5.0</td><td>Silver Creek High School</td><td>9.0</td><td>2.0</td><td>2.0</td><td>27</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2130-Pastoral-Loop-95122/home/167534644" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2149 Pastoral Loop, San Jose, CA</td><td>95122</td><td>house</td><td>$1,728,000</td><td>2,839</td><td>2476.0</td><td>$609</td><td>4.0</td><td>3.5</td><td>John J. Montgomery Elementary School</td><td>5.0</td><td>George V. Leyva Intermediate School</td><td>5.0</td><td>Silver Creek High School</td><td>9.0</td><td>2.0</td><td>2.0</td><td>41</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2149-Pastoral-Loop-95122/home/167534624" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">7394 Basking Ridge Ave, San Jose, CA</td><td>95138</td><td>house</td><td>$1,598,000</td><td>2,386</td><td>3011.0</td><td>$670</td><td>5.0</td><td>3.5</td><td>Ledesma (Rita) Elementary School</td><td>9.0</td><td>Ledesma (Rita) Elementary School</td><td>9.0</td><td>Oak Grove High School</td><td>5.0</td><td>2.0</td><td>2.0</td><td>84</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/7394-Basking-Ridge-Ave-95138/home/12178638" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">7237 Longhill Way, San Jose, CA</td><td>95138</td><td>house</td><td>$1,775,000</td><td>2,626</td><td>3485.0</td><td>$676</td><td>5.0</td><td>3.5</td><td>Ledesma (Rita) Elementary School</td><td>9.0</td><td>Ledesma (Rita) Elementary School</td><td>9.0</td><td>Oak Grove High School</td><td>5.0</td><td>2.0</td><td>2.0</td><td>2</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/7237-Longhill-Way-95138/home/12178583" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2154 Orlando Dr, San Jose, CA</td><td>95122</td><td>house</td><td>$1,149,999</td><td>1,700</td><td>5150.0</td><td>$676</td><td>5.0</td><td>4.0</td><td>Thomas P. Ryan Elementary School</td><td>4.0</td><td>nan</td><td>nan</td><td>William C. Overfelt High School</td><td>3.0</td><td>nan</td><td>0.0</td><td>4</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2154-Orlando-Dr-95122/home/893379" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">3261 Everdale Dr, San Jose, CA</td><td>95148</td><td>house</td><td>$1,409,000</td><td>2,075</td><td>6000.0</td><td>$679</td><td>4.0</td><td>2.0</td><td>Holly Oak Elementary School</td><td>5.0</td><td>George V. Leyva Intermediate School</td><td>5.0</td><td>Silver Creek High School</td><td>9.0</td><td>2.0</td><td>2.0</td><td>18</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/3261-Everdale-Dr-95148/home/1156143" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">3146 Marten Ave, San Jose, CA</td><td>95148</td><td>house</td><td>$1,449,999</td><td>2,068</td><td>6018.0</td><td>$701</td><td>4.0</td><td>2.0</td><td>Valle Vista Elementary School</td><td>3.0</td><td>August Boeger Middle School</td><td>5.0</td><td>Mt. Pleasant High School</td><td>4.0</td><td>2.0</td><td>2.0</td><td>1</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/3146-Marten-Ave-95148/home/950844" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">1655 Marsh St, San Jose, CA</td><td>95122</td><td>house</td><td>$1,050,000</td><td>1,430</td><td>5500.0</td><td>$734</td><td>3.0</td><td>2.0</td><td>O. S. Hubbard Elementary School</td><td>2.0</td><td>Ocala Middle School</td><td>5.0</td><td>William C. Overfelt High School</td><td>3.0</td><td>1.0</td><td>1.0</td><td>5</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/1655-Marsh-St-95122/home/1584217" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">7472 Gresham Ct, San Jose, CA</td><td>95139</td><td>house</td><td>$1,748,000</td><td>2,347</td><td>6050.0</td><td>$745</td><td>5.0</td><td>3.0</td><td>Los Paseos Elementary School</td><td>3.0</td><td>Martin Murphy Middle School</td><td>5.0</td><td>Ann Sobrato High School</td><td>10.0</td><td>3.0</td><td>3.0</td><td>1</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/7472-Gresham-Ct-95139/home/1147856" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">7351 Forsum Rd, San Jose, CA</td><td>95138</td><td>house</td><td>$1,099,999</td><td>1,454</td><td>4076.0</td><td>$757</td><td>3.0</td><td>2.5</td><td>Los Paseos Elementary School</td><td>3.0</td><td>Martin Murphy Middle School</td><td>5.0</td><td>Ann Sobrato High School</td><td>10.0</td><td>2.0</td><td>2.0</td><td>11</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/7351-Forsum-Rd-95138/home/976906" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2051 Edgegate Dr, San Jose, CA</td><td>95122</td><td>house</td><td>$1,098,000</td><td>1,446</td><td>4140.0</td><td>$759</td><td>4.0</td><td>2.0</td><td>Katherine R. Smith Elementary School</td><td>4.0</td><td>George V. Leyva Intermediate School</td><td>5.0</td><td>Silver Creek High School</td><td>9.0</td><td>2.0</td><td>2.0</td><td>6</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2051-Edgegate-Dr-95122/home/1170041" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2955 Vineyard Park Dr, San Jose, CA</td><td>95148</td><td>house</td><td>$1,499,000</td><td>1,955</td><td>3900.0</td><td>$767</td><td>4.0</td><td>2.5</td><td>Norwood Creek Elementary School</td><td>8.0</td><td>Norwood Creek Elementary School</td><td>8.0</td><td>William C. Overfelt High School</td><td>3.0</td><td>2.0</td><td>2.0</td><td>13</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2955-Vineyard-Park-Dr-95148/home/1543769" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">3512 Pleasant Crest Dr, San Jose, CA</td><td>95148</td><td>house</td><td>$1,688,000</td><td>2,181</td><td>8091.0</td><td>$774</td><td>5.0</td><td>4.0</td><td>Valle Vista Elementary School</td><td>3.0</td><td>August Boeger Middle School</td><td>5.0</td><td>Mt. Pleasant High School</td><td>4.0</td><td>2.0</td><td>2.0</td><td>7</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/3512-Pleasant-Crest-Dr-95148/home/954925" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">2186 Bikini Ave, San Jose, CA</td><td>95122</td><td>house</td><td>$1,049,000</td><td>1,350</td><td>5500.0</td><td>$777</td><td>4.0</td><td>2.0</td><td>Jeanne R. Meadows Elementary School</td><td>7.0</td><td>Jeanne R. Meadows Elementary School</td><td>7.0</td><td>Yerba Buena High School</td><td>7.0</td><td>2.0</td><td>2.0</td><td>2</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/2186-Bikini-Ave-95122/home/879081" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td class="sticky-first-col">6277 Ginashell Cir, San Jose, CA</td><td>95119</td><td>house</td><td>$1,699,950</td><td>2,039</td><td>4000.0</td><td>$834</td><td>4.0</td><td>3.0</td><td>Santa Teresa Elementary School</td><td>7.0</td><td>Santa Teresa Elementary School</td><td>7.0</td><td>Santa Teresa High School</td><td>8.0</td><td>2.0</td><td>2.0</td><td>15</td><td class="sticky-link-col"><a href="https://www.redfin.com/CA/San-Jose/6277-Ginashell-Cir-95119/home/1788385" target="_blank" rel="noreferrer">Open</a></td></tr></tbody></table></div></section>
+
+    <div class="footer">Generated from local CSV outputs in this repository.</div>
+  </div>
+</body>
+</html>

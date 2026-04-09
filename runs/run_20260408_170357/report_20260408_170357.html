@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Redfin Scraper Report</title>
+  <style>
+    :root {
+      --bg: #f7f3ea;
+      --paper: #fffdf8;
+      --ink: #1f2933;
+      --muted: #5b6470;
+      --accent: #0b6e4f;
+      --accent-soft: #d8efe6;
+      --border: #dccfb8;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Georgia, "Times New Roman", serif;
+      background:
+        radial-gradient(circle at top left, #fff7df 0, transparent 28%),
+        linear-gradient(180deg, #f7f3ea 0%, #efe6d6 100%);
+      color: var(--ink);
+    }
+    .page {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 32px 20px 48px;
+    }
+    .hero {
+      background: linear-gradient(135deg, rgba(11,110,79,0.95), rgba(48,86,211,0.86));
+      color: white;
+      border-radius: 24px;
+      padding: 28px;
+      box-shadow: 0 18px 50px rgba(17, 24, 39, 0.16);
+    }
+    .hero h1 {
+      margin: 0 0 8px;
+      font-size: 2rem;
+      line-height: 1.1;
+    }
+    .hero p {
+      margin: 0;
+      color: rgba(255,255,255,0.88);
+      max-width: 780px;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 14px;
+      margin: 22px 0 28px;
+    }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(80, 63, 32, 0.08);
+    }
+    .label {
+      color: var(--muted);
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .value {
+      font-size: 1.6rem;
+      font-weight: bold;
+    }
+    section {
+      margin-top: 28px;
+      background: rgba(255, 253, 248, 0.88);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 8px 24px rgba(80, 63, 32, 0.06);
+    }
+    h2 {
+      margin: 0 0 14px;
+      font-size: 1.35rem;
+    }
+    .table-wrap {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+    th, td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #eadfcf;
+      text-align: left;
+      vertical-align: top;
+      font-size: 0.95rem;
+    }
+    th {
+      position: sticky;
+      top: 0;
+      background: #f8f1e5;
+    }
+    tr:hover td {
+      background: #fcf7ef;
+    }
+    a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: bold;
+    }
+    .footer {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .filter-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 12px;
+    }
+    .filter-item {
+      background: #fcf7ef;
+      border: 1px solid #eadfcf;
+      border-radius: 14px;
+      padding: 12px 14px;
+    }
+    .filter-key {
+      display: block;
+      color: var(--muted);
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 4px;
+    }
+    .filter-value {
+      display: block;
+      font-size: 1rem;
+      font-weight: bold;
+    }
+    @media (max-width: 720px) {
+      .hero h1 { font-size: 1.65rem; }
+      .page { padding: 20px 14px 36px; }
+      section { padding: 14px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <h1>Redfin Market Snapshot</h1>
+      <p>Use this page to scan the current market, spot the most attractive listings, and compare nearby zip codes without digging through raw CSV files.</p>
+    </div>
+
+    <div class="cards">
+      <div class="card"><div class="label">Total Listings</div><div class="value">16</div></div><div class="card"><div class="label">Median Price</div><div class="value">$1,399,425</div></div><div class="card"><div class="label">Avg Price / SqFt</div><div class="value">$1,236</div></div><div class="card"><div class="label">Median Days On Market</div><div class="value">16</div></div>
+    </div>
+
+    <section><h2>Filter Summary</h2><div class="filter-grid"><div class="filter-item"><span class="filter-key">Budget</span><span class="filter-value">$800,000 to $2,000,000</span></div><div class="filter-item"><span class="filter-key">Min Beds</span><span class="filter-value">3.0</span></div><div class="filter-item"><span class="filter-key">Min Elementary Rating</span><span class="filter-value">7.0</span></div><div class="filter-item"><span class="filter-key">Min High Rating</span><span class="filter-value">9.0</span></div><div class="filter-item"><span class="filter-key">Included ZIPs</span><span class="filter-value">95132</span></div></div></section>
+    <section><h2>Top Deals</h2><div class="table-wrap"><table><thead><tr><th>Address</th><th>ZIP</th><th>Price</th><th>SqFt</th><th>Price / SqFt</th><th>Beds</th><th>Baths</th><th>Days On Market</th><th>Deal Score</th><th>Link</th></tr></thead><tbody><tr><td>1205 Sierra Village Way, San Jose, CA</td><td>95132</td><td>$898,000</td><td>1,430</td><td>$628</td><td>2.0</td><td>2.5</td><td>20</td><td>634.97</td><td><a href="https://www.redfin.com/CA/San-Jose/1205-Sierra-Village-Way-95132/home/939693" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>3565 Ivalynn Cir, San Jose, CA</td><td>95132</td><td>$799,000</td><td>1,124</td><td>$711</td><td>2.0</td><td>2.5</td><td>6</td><td>712.95</td><td><a href="https://www.redfin.com/CA/San-Jose/3565-Ivalynn-Cir-95132/home/750254" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>3184 Fernside Sq, San Jose, CA</td><td>95132</td><td>$899,950</td><td>1,266</td><td>$711</td><td>3.0</td><td>1.5</td><td>7</td><td>713.31</td><td><a href="https://www.redfin.com/CA/San-Jose/3184-Fernside-Sq-95132/home/1169082" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>1912 Vinedale Sq, San Jose, CA</td><td>95132</td><td>$799,950</td><td>1,160</td><td>$690</td><td>2.0</td><td>1.5</td><td>85</td><td>719.36</td><td><a href="https://www.redfin.com/CA/San-Jose/1912-Vinedale-Sq-95132/home/904723" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>2158 Capitol Park Ct, San Jose, CA</td><td>95132</td><td>$1,400,000</td><td>1,912</td><td>$732</td><td>4.0</td><td>2.5</td><td>49</td><td>749.37</td><td><a href="https://www.redfin.com/CA/San-Jose/2158-Capitol-Park-Ct-95132/home/1694569" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>2838 Agua Vista Dr, San Jose, CA</td><td>95132</td><td>$2,098,000</td><td>2,360</td><td>$889</td><td>4.0</td><td>3.0</td><td>5</td><td>890.73</td><td><a href="https://www.redfin.com/CA/San-Jose/2838-Agua-Vista-Dr-95132/home/938788" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>3139 Laneview Dr, San Jose, CA</td><td>95132</td><td>$1,658,000</td><td>1,772</td><td>$936</td><td>5.0</td><td>3.0</td><td>1</td><td>936.02</td><td><a href="https://www.redfin.com/CA/San-Jose/3139-Laneview-Dr-95132/home/1746226" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>2074 Ashwood Ln, San Jose, CA</td><td>95132</td><td>$1,688,000</td><td>1,772</td><td>$953</td><td>4.0</td><td>3.0</td><td>58</td><td>972.9</td><td><a href="https://www.redfin.com/CA/San-Jose/2074-Ashwood-Ln-95132/home/641803" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>3023 Postwood Dr, San Jose, CA</td><td>95132</td><td>$1,550,000</td><td>1,591</td><td>$974</td><td>5.0</td><td>4.0</td><td>12</td><td>978.43</td><td><a href="https://www.redfin.com/CA/San-Jose/3023-Postwood-Dr-95132/home/687844" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>2085 Ashwood Ln, San Jose, CA</td><td>95132</td><td>$1,380,000</td><td>1,300</td><td>$1,062</td><td>3.0</td><td>2.0</td><td>90</td><td>1093.04</td><td><a href="https://www.redfin.com/CA/San-Jose/2085-Ashwood-Ln-95132/home/572103" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>1831 Morrill Ave, San Jose, CA</td><td>95132</td><td>$1,398,850</td><td>1,125</td><td>$1,243</td><td>4.0</td><td>1.5</td><td>12</td><td>1247.62</td><td><a href="https://www.redfin.com/CA/San-Jose/1831-Morrill-Ave-95132/home/976892" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>3025 Zion Ln, San Jose, CA</td><td>95132</td><td>$1,799,000</td><td>1,393</td><td>$1,291</td><td>4.0</td><td>2.0</td><td>5</td><td>1293.21</td><td><a href="https://www.redfin.com/CA/San-Jose/3025-Zion-Ln-95132/home/1626565" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>1440 Old Piedmont. Rd, San Jose, CA</td><td>95132</td><td>$4,200,000</td><td>800</td><td>$5,250</td><td>2.0</td><td>1.0</td><td>8</td><td>5252.8</td><td><a href="https://www.redfin.com/CA/San-Jose/1440-Old-Piedmont-Rd-95132/home/629668" target="_blank" rel="noreferrer">Open</a></td></tr></tbody></table></div></section>
+    <section><h2>Latest Listings Snapshot</h2><div class="table-wrap"><table><thead><tr><th>Address</th><th>ZIP</th><th>Property Type</th><th>Price</th><th>SqFt</th><th>Lot Size</th><th>Beds</th><th>Baths</th><th>Elementary School</th><th>Elementary Rating</th><th>Middle School</th><th>Middle Rating</th><th>High School</th><th>High Rating</th><th>Garage</th><th>Parking</th><th>Days On Market</th><th>Link</th></tr></thead><tbody><tr><td>1205 Sierra Village Way, San Jose, CA</td><td>95132</td><td>townhouse</td><td>$898,000</td><td>1,430</td><td>nan</td><td>2.0</td><td>2.5</td><td>Ruskin Elementary School</td><td>6.0</td><td>Sierramont Middle School</td><td>8.0</td><td>Piedmont Hills High School</td><td>10.0</td><td>2.0</td><td>2.0</td><td>20</td><td><a href="https://www.redfin.com/CA/San-Jose/1205-Sierra-Village-Way-95132/home/939693" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>1912 Vinedale Sq, San Jose, CA</td><td>95132</td><td>townhouse</td><td>$799,950</td><td>1,160</td><td>1480.0</td><td>2.0</td><td>1.5</td><td>Majestic Way Elementary School</td><td>7.0</td><td>Sierramont Middle School</td><td>8.0</td><td>Piedmont Hills High School</td><td>10.0</td><td>2.0</td><td>2.0</td><td>85</td><td><a href="https://www.redfin.com/CA/San-Jose/1912-Vinedale-Sq-95132/home/904723" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>3565 Ivalynn Cir, San Jose, CA</td><td>95132</td><td>condo</td><td>$799,000</td><td>1,124</td><td>436.0</td><td>2.0</td><td>2.5</td><td>Noble Elementary School</td><td>6.0</td><td>Piedmont Middle School</td><td>7.0</td><td>Piedmont Hills High School</td><td>10.0</td><td>2.0</td><td>2.0</td><td>6</td><td><a href="https://www.redfin.com/CA/San-Jose/3565-Ivalynn-Cir-95132/home/750254" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>3184 Fernside Sq, San Jose, CA</td><td>95132</td><td>townhouse</td><td>$899,950</td><td>1,266</td><td>nan</td><td>3.0</td><td>1.5</td><td>Majestic Way Elementary School</td><td>7.0</td><td>Sierramont Middle School</td><td>8.0</td><td>Piedmont Hills High School</td><td>10.0</td><td>nan</td><td>0.0</td><td>7</td><td><a href="https://www.redfin.com/CA/San-Jose/3184-Fernside-Sq-95132/home/1169082" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>2158 Capitol Park Ct, San Jose, CA</td><td>95132</td><td>house</td><td>$1,400,000</td><td>1,912</td><td>2613.0</td><td>4.0</td><td>2.5</td><td>Northwood Elementary School</td><td>9.0</td><td>Morrill Middle School</td><td>7.0</td><td>Independence High School</td><td>6.0</td><td>2.0</td><td>2.0</td><td>49</td><td><a href="https://www.redfin.com/CA/San-Jose/2158-Capitol-Park-Ct-95132/home/1694569" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>2838 Agua Vista Dr, San Jose, CA</td><td>95132</td><td>house</td><td>$2,098,000</td><td>2,360</td><td>6435.0</td><td>4.0</td><td>3.0</td><td>Brooktree Elementary School</td><td>6.0</td><td>Sierramont Middle School</td><td>8.0</td><td>Independence High School</td><td>6.0</td><td>2.0</td><td>2.0</td><td>5</td><td><a href="https://www.redfin.com/CA/San-Jose/2838-Agua-Vista-Dr-95132/home/938788" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>3139 Laneview Dr, San Jose, CA</td><td>95132</td><td>house</td><td>$1,658,000</td><td>1,772</td><td>6099.0</td><td>5.0</td><td>3.0</td><td>Majestic Way Elementary School</td><td>7.0</td><td>Morrill Middle School</td><td>7.0</td><td>Independence High School</td><td>6.0</td><td>2.0</td><td>2.0</td><td>1</td><td><a href="https://www.redfin.com/CA/San-Jose/3139-Laneview-Dr-95132/home/1746226" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>2074 Ashwood Ln, San Jose, CA</td><td>95132</td><td>house</td><td>$1,688,000</td><td>1,772</td><td>6099.0</td><td>4.0</td><td>3.0</td><td>Majestic Way Elementary School</td><td>7.0</td><td>Morrill Middle School</td><td>7.0</td><td>Independence High School</td><td>6.0</td><td>1.0</td><td>2.0</td><td>58</td><td><a href="https://www.redfin.com/CA/San-Jose/2074-Ashwood-Ln-95132/home/641803" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>3023 Postwood Dr, San Jose, CA</td><td>95132</td><td>house</td><td>$1,550,000</td><td>1,591</td><td>7200.0</td><td>5.0</td><td>4.0</td><td>Northwood Elementary School</td><td>9.0</td><td>Morrill Middle School</td><td>7.0</td><td>Independence High School</td><td>6.0</td><td>2.0</td><td>2.0</td><td>12</td><td><a href="https://www.redfin.com/CA/San-Jose/3023-Postwood-Dr-95132/home/687844" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>2085 Ashwood Ln, San Jose, CA</td><td>95132</td><td>house</td><td>$1,380,000</td><td>1,300</td><td>6099.0</td><td>3.0</td><td>2.0</td><td>Majestic Way Elementary School</td><td>7.0</td><td>Morrill Middle School</td><td>7.0</td><td>Independence High School</td><td>6.0</td><td>2.0</td><td>2.0</td><td>90</td><td><a href="https://www.redfin.com/CA/San-Jose/2085-Ashwood-Ln-95132/home/572103" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>1831 Morrill Ave, San Jose, CA</td><td>95132</td><td>house</td><td>$1,398,850</td><td>1,125</td><td>6000.0</td><td>4.0</td><td>1.5</td><td>Northwood Elementary School</td><td>9.0</td><td>Morrill Middle School</td><td>7.0</td><td>Independence High School</td><td>6.0</td><td>1.0</td><td>2.0</td><td>12</td><td><a href="https://www.redfin.com/CA/San-Jose/1831-Morrill-Ave-95132/home/976892" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>3025 Zion Ln, San Jose, CA</td><td>95132</td><td>house</td><td>$1,799,000</td><td>1,393</td><td>nan</td><td>4.0</td><td>2.0</td><td>Ruskin Elementary School</td><td>6.0</td><td>Sierramont Middle School</td><td>8.0</td><td>Piedmont Hills High School</td><td>10.0</td><td>nan</td><td>nan</td><td>5</td><td><a href="https://www.redfin.com/CA/San-Jose/3025-Zion-Ln-95132/home/1626565" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>1440 Old Piedmont. Rd, San Jose, CA</td><td>95132</td><td>house</td><td>$4,200,000</td><td>800</td><td>44927.0</td><td>2.0</td><td>1.0</td><td>Noble Elementary School</td><td>6.0</td><td>Sierramont Middle School</td><td>8.0</td><td>Piedmont Hills High School</td><td>10.0</td><td>0.0</td><td>nan</td><td>8</td><td><a href="https://www.redfin.com/CA/San-Jose/1440-Old-Piedmont-Rd-95132/home/629668" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>6 Claitor Way, San Jose, CA</td><td>95132</td><td>multi_family</td><td>$250,000</td><td>-</td><td>10019.0</td><td>nan</td><td>nan</td><td>Ruskin Elementary School</td><td>6.0</td><td>Sierramont Middle School</td><td>8.0</td><td>Piedmont Hills High School</td><td>10.0</td><td>nan</td><td>nan</td><td>61</td><td><a href="https://www.redfin.com/CA/San-Jose/6-Claitor-Way-95132/home/171976342" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>720 Lariat Ln, San Jose, CA</td><td>95132</td><td>multi_family</td><td>$300,000</td><td>-</td><td>44147.0</td><td>nan</td><td>nan</td><td>Noble Elementary School</td><td>6.0</td><td>Piedmont Middle School</td><td>7.0</td><td>Piedmont Hills High School</td><td>10.0</td><td>nan</td><td>nan</td><td>76</td><td><a href="https://www.redfin.com/CA/San-Jose/720-Lariat-Ln-95132/home/160411672" target="_blank" rel="noreferrer">Open</a></td></tr></tbody></table></div></section>
+    <section><h2>School-Focused Homes</h2><div class="table-wrap"><table><thead><tr><th>Address</th><th>ZIP</th><th>Price</th><th>SqFt</th><th>Price / SqFt</th><th>School Score</th><th>School Signals</th><th>Link</th></tr></thead><tbody><tr><td>3025 Zion Ln, San Jose, CA</td><td>95132</td><td>$1,799,000</td><td>1,393</td><td>$1,291</td><td>10</td><td>high school, middle school, school, schools, top-rated</td><td><a href="https://www.redfin.com/CA/San-Jose/3025-Zion-Ln-95132/home/1626565" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>2158 Capitol Park Ct, San Jose, CA</td><td>95132</td><td>$1,400,000</td><td>1,912</td><td>$732</td><td>8</td><td>good school, school, school district, schools</td><td><a href="https://www.redfin.com/CA/San-Jose/2158-Capitol-Park-Ct-95132/home/1694569" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>6 Claitor Way, San Jose, CA</td><td>95132</td><td>$250,000</td><td>-</td><td>-</td><td>8</td><td>excellent school, school, school district</td><td><a href="https://www.redfin.com/CA/San-Jose/6-Claitor-Way-95132/home/171976342" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>1440 Old Piedmont. Rd, San Jose, CA</td><td>95132</td><td>$4,200,000</td><td>800</td><td>$5,250</td><td>4</td><td>middle school, school, schools</td><td><a href="https://www.redfin.com/CA/San-Jose/1440-Old-Piedmont-Rd-95132/home/629668" target="_blank" rel="noreferrer">Open</a></td></tr><tr><td>3565 Ivalynn Cir, San Jose, CA</td><td>95132</td><td>$799,000</td><td>1,124</td><td>$711</td><td>3</td><td>high school, school</td><td><a href="https://www.redfin.com/CA/San-Jose/3565-Ivalynn-Cir-95132/home/750254" target="_blank" rel="noreferrer">Open</a></td></tr></tbody></table></div></section>
+    <section><h2>Zip Comparison</h2><div class="table-wrap"><table><thead><tr><th>ZIP</th><th>Listings</th><th>Median Price</th><th>Average Price</th><th>Median SqFt</th><th>Average Price / SqFt</th><th>Median Price / SqFt</th><th>Median Days On Market</th><th>Average Beds</th><th>Average Baths</th></tr></thead><tbody><tr><td>95132</td><td>16</td><td>$1,399,425</td><td>$1,413,609</td><td>1,393.00</td><td>$1,236</td><td>$936</td><td>16.00</td><td>3.38</td><td>2.31</td></tr></tbody></table></div></section>
+    
+    <section><h2>Budget Matches</h2><div class="table-wrap"><table><thead><tr><th>Address</th><th>ZIP</th><th>Property Type</th><th>Price</th><th>SqFt</th><th>Lot Size</th><th>Price / SqFt</th><th>Beds</th><th>Baths</th><th>Elementary School</th><th>Elementary Rating</th><th>Middle School</th><th>Middle Rating</th><th>High School</th><th>High Rating</th><th>Garage</th><th>Parking</th><th>Days On Market</th><th>Link</th></tr></thead><tbody><tr><td>3184 Fernside Sq, San Jose, CA</td><td>95132</td><td>townhouse</td><td>$899,950</td><td>1,266</td><td>nan</td><td>$711</td><td>3.0</td><td>1.5</td><td>Majestic Way Elementary School</td><td>7.0</td><td>Sierramont Middle School</td><td>8.0</td><td>Piedmont Hills High School</td><td>10.0</td><td>nan</td><td>0.0</td><td>7</td><td><a href="https://www.redfin.com/CA/San-Jose/3184-Fernside-Sq-95132/home/1169082" target="_blank" rel="noreferrer">Open</a></td></tr></tbody></table></div></section>
+
+    <div class="footer">Generated from local CSV outputs in this repository.</div>
+  </div>
+</body>
+</html>

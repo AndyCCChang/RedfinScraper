@@ -1,6 +1,6 @@
 {"zip_database_path":"./zip_code_database.csv",
-"city_states":["San Jose, CA"],
-"zip_codes":["95132"],
+"city_states":[],
+"zip_codes":[95131, 95132, 95133, 95134, 95135, 95136, 95138, 95139, 95140, 95141, 95148],
 "multiprocessing":"False",
 "sold":"False",
 "sale_period":"None",

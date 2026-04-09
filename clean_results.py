@@ -1,7 +1,12 @@
-from pathlib import Path
+import json
 
 import pandas as pd
-from pipeline_context import output_path, resolve_input_path
+import requests
+from pipeline_context import (
+    output_path,
+    resolve_input_path,
+    update_latest_analysis_ready_pointer_from_path,
+)
 
 
 PROPERTY_TYPE_MAP = {
@@ -26,6 +31,25 @@ SCHOOL_KEYWORDS = {
     "high school": 2,
     "schools": 1,
     "school": 1,
+}
+
+
+ELEMENTARY_SCHOOL_KEYWORDS = {
+    "top-rated elementary school": 6,
+    "top rated elementary school": 6,
+    "excellent elementary school": 5,
+    "good elementary school": 4,
+    "elementary school": 3,
+    "elementary": 1,
+}
+
+
+HIGH_SCHOOL_KEYWORDS = {
+    "top-rated high school": 6,
+    "top rated high school": 6,
+    "excellent high school": 5,
+    "good high school": 4,
+    "high school": 3,
 }
 
 
@@ -58,6 +82,8 @@ OUTPUT_COLUMNS = {
     "url": "url",
 }
 
+REDFIN_SCHOOLS_API = "https://www.redfin.com/stingray/api/v1/home/details/belowTheFold/schoolsAndDistrictsInfo"
+
 
 def score_school_text(text: str) -> int:
     if not isinstance(text, str):
@@ -69,6 +95,158 @@ def score_school_text(text: str) -> int:
         if keyword in lowered:
             score += weight
     return score
+
+
+def score_keyword_map(text: str, keywords) -> int:
+    if not isinstance(text, str):
+        return 0
+
+    lowered = text.lower()
+    score = 0
+    for keyword, weight in keywords.items():
+        if keyword in lowered:
+            score += weight
+    return score
+
+
+def school_request_headers(referer: str = None) -> dict:
+    headers = {
+        "User-Agent": (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+            "AppleWebKit/537.36 (KHTML, like Gecko) "
+            "Chrome/135.0.0.0 Safari/537.36"
+        ),
+        "Accept-Language": "en-US,en;q=0.9",
+        "Accept": "application/json, text/plain, */*",
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": referer or "https://www.redfin.com",
+    }
+    return headers
+
+
+def decode_redfin_json(response_text: str) -> dict:
+    if response_text.startswith("{}&&"):
+        response_text = response_text[4:]
+    return json.loads(response_text)
+
+
+def parse_grade_token(token: str):
+    cleaned = token.strip().upper()
+    if cleaned in {"PK", "TK", "K"}:
+        return 0
+    if cleaned.isdigit():
+        return int(cleaned)
+    return None
+
+
+def grade_span(grade_ranges: str):
+    if not isinstance(grade_ranges, str) or not grade_ranges.strip():
+        return (None, None)
+
+    normalized = grade_ranges.strip().upper()
+    if "-" in normalized:
+        left, right = normalized.split("-", 1)
+        return parse_grade_token(left), parse_grade_token(right)
+
+    value = parse_grade_token(normalized)
+    return value, value
+
+
+def school_levels(grade_ranges: str):
+    min_grade, max_grade = grade_span(grade_ranges)
+    levels = set()
+
+    if min_grade is None or max_grade is None:
+        return levels
+
+    if min_grade <= 5 and max_grade >= 0:
+        levels.add("elementary")
+    if min_grade <= 8 and max_grade >= 6:
+        levels.add("middle")
+    if min_grade <= 12 and max_grade >= 9:
+        levels.add("high")
+
+    return levels
+
+
+def fetch_redfin_school_ratings(df: pd.DataFrame) -> pd.DataFrame:
+    required_columns = {"propertyId", "listingId", "url"}
+    if not required_columns.issubset(df.columns):
+        return pd.DataFrame(index=df.index)
+
+    session = requests.Session()
+    records = []
+
+    for _, row in df.iterrows():
+        property_id = row.get("propertyId")
+        listing_id = row.get("listingId")
+        referer = row.get("url")
+
+        school_record = {
+            "elementary_school_name": pd.NA,
+            "elementary_school_rating": pd.NA,
+            "middle_school_name": pd.NA,
+            "middle_school_rating": pd.NA,
+            "high_school_name": pd.NA,
+            "high_school_rating": pd.NA,
+        }
+
+        if pd.isna(property_id) or pd.isna(listing_id):
+            records.append(school_record)
+            continue
+
+        try:
+            params = {
+                "propertyId": int(property_id),
+                "listingId": int(listing_id),
+                "accessLevel": 1,
+            }
+            response = session.get(
+                REDFIN_SCHOOLS_API,
+                params=params,
+                headers=school_request_headers(referer=referer),
+                timeout=20,
+            )
+            response.raise_for_status()
+            payload = decode_redfin_json(response.text)
+            schools = payload.get("payload", {}).get("servingThisHomeSchools", [])
+        except Exception:
+            records.append(school_record)
+            continue
+
+        best_by_level = {}
+        for school in schools:
+            rating = school.get("greatSchoolsRating")
+            name = school.get("name")
+            levels = school_levels(school.get("gradeRanges"))
+            distance = school.get("distanceInMiles")
+
+            try:
+                rating_value = float(rating)
+            except (TypeError, ValueError):
+                continue
+
+            try:
+                distance_value = float(distance)
+            except (TypeError, ValueError):
+                distance_value = float("inf")
+
+            for level in levels:
+                current = best_by_level.get(level)
+                candidate = (rating_value, -distance_value, name)
+                if current is None or candidate > current:
+                    best_by_level[level] = candidate
+
+        for level in ("elementary", "middle", "high"):
+            candidate = best_by_level.get(level)
+            if candidate is None:
+                continue
+            school_record["%s_school_rating" % level] = candidate[0]
+            school_record["%s_school_name" % level] = candidate[2]
+
+        records.append(school_record)
+
+    return pd.DataFrame(records, index=df.index)
 
 
 def main() -> int:
@@ -85,8 +263,20 @@ def main() -> int:
     clean = df[available_columns].copy()
     clean = clean.rename(columns=OUTPUT_COLUMNS)
 
+    school_ratings = fetch_redfin_school_ratings(df)
+    if not school_ratings.empty:
+        for column in school_ratings.columns:
+            clean[column] = school_ratings[column]
+
     if "listingRemarks" in df.columns:
-        clean["school_score"] = df["listingRemarks"].fillna("").apply(score_school_text)
+        listing_remarks = df["listingRemarks"].fillna("")
+        clean["school_score"] = listing_remarks.apply(score_school_text)
+        clean["elementary_school_score"] = listing_remarks.apply(
+            lambda text: score_keyword_map(text, ELEMENTARY_SCHOOL_KEYWORDS)
+        )
+        clean["high_school_score"] = listing_remarks.apply(
+            lambda text: score_keyword_map(text, HIGH_SCHOOL_KEYWORDS)
+        )
 
     if "property_type" in clean.columns:
         clean["property_type_code"] = pd.to_numeric(clean["property_type"], errors="coerce")
@@ -100,6 +290,12 @@ def main() -> int:
         clean["lot_size"] = pd.to_numeric(clean["lot_size"], errors="coerce")
     if "days_on_market" in clean.columns:
         clean["days_on_market"] = pd.to_numeric(clean["days_on_market"], errors="coerce")
+    if "elementary_school_rating" in clean.columns:
+        clean["elementary_school_rating"] = pd.to_numeric(clean["elementary_school_rating"], errors="coerce")
+    if "middle_school_rating" in clean.columns:
+        clean["middle_school_rating"] = pd.to_numeric(clean["middle_school_rating"], errors="coerce")
+    if "high_school_rating" in clean.columns:
+        clean["high_school_rating"] = pd.to_numeric(clean["high_school_rating"], errors="coerce")
     if "garage_spaces" in clean.columns:
         clean["garage_spaces"] = pd.to_numeric(clean["garage_spaces"], errors="coerce")
     if "parking_spaces" in clean.columns:
@@ -144,6 +340,14 @@ def main() -> int:
         "year_built",
         "days_on_market",
         "school_score",
+        "elementary_school_name",
+        "elementary_school_score",
+        "elementary_school_rating",
+        "middle_school_name",
+        "middle_school_rating",
+        "high_school_name",
+        "high_school_score",
+        "high_school_rating",
         "mls_status",
         "property_type",
         "property_type_code",
@@ -166,6 +370,7 @@ def main() -> int:
     clean = clean.sort_values(sort_columns, ascending=[True, True, True], na_position="last")
 
     clean.to_csv(output_csv_path, index=False)
+    update_latest_analysis_ready_pointer_from_path(output_csv_path)
 
     print(f"Saved {len(clean)} rows to {output_csv_path.resolve()}")
     print(clean.head(10).to_string(index=False))

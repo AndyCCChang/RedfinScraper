@@ -45,7 +45,7 @@ If you are using this repository directly instead of the published package, you 
 
 7. Or add garage, parking, and property-type filters:
 
-`python3 all_in_one.py 800000 1500000 --min-beds 3 --min-baths 2 --min-lot-size 5000 --min-garage-spaces 2 --min-parking-spaces 2 --min-school-score 6 --property-types house townhouse --max-price-per-sqft 900 --include-zips 95132 95148`
+`python3 all_in_one.py 800000 1500000 --min-beds 3 --min-baths 2 --min-lot-size 5900 --min-garage-spaces 2 --min-parking-spaces 2 --min-school-score 6 --property-types house townhouse --max-price-per-sqft 900 --include-zips 95132 95148`
 
 8. Or require exact school names too:
 
