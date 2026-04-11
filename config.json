@@ -1,12 +1,12 @@
 {
   "zip_database_path": "./zip_code_database.csv",
   "city_states": [
-    "Fremont, CA"
+    
   ],
-  "zip_codes": [],
+  "zip_codes": ["95131", "95132", "95133"],
   "multiprocessing": "False",
-  "sold": "False",
-  "sale_period": "None",
+  "sold": "True",
+  "sale_period": "1yr",
   "lat_tuner": "1.5",
   "lon_tuner": "1.5"
 }

@@ -14,11 +14,24 @@ def build_top_deals(df: pd.DataFrame) -> pd.DataFrame:
     if "sqft" in deals.columns:
         deals = deals[deals["sqft"].fillna(0) > 0]
 
+    if "price_per_sqft" in deals.columns:
+        price_per_sqft = deals["price_per_sqft"]
+    elif "price" in deals.columns and "sqft" in deals.columns:
+        price_per_sqft = deals["price"] / deals["sqft"].replace(0, pd.NA)
+        deals["price_per_sqft"] = price_per_sqft.round(2)
+    else:
+        price_per_sqft = pd.Series(pd.NA, index=deals.index)
+
+    if "days_on_market" in deals.columns:
+        days_on_market = deals["days_on_market"]
+    else:
+        days_on_market = pd.Series(60, index=deals.index)
+
     # A simple practical ranking:
     # lower price/sqft is better, and newer listings get a small boost.
     deals["deal_score"] = (
-        deals["price_per_sqft"].fillna(deals["price_per_sqft"].median()) * 1.0
-        + deals["days_on_market"].fillna(60) * 0.35
+        price_per_sqft.fillna(price_per_sqft.median()) * 1.0
+        + days_on_market.fillna(60) * 0.35
     ).round(2)
 
     columns = [
@@ -38,30 +51,37 @@ def build_top_deals(df: pd.DataFrame) -> pd.DataFrame:
         "url",
     ]
     columns = [col for col in columns if col in deals.columns]
-    deals = deals[columns].sort_values(
-        ["deal_score", "price_per_sqft", "price"],
-        ascending=[True, True, True],
-        na_position="last",
-    )
+    deals = deals[columns]
+    sort_columns = [col for col in ["deal_score", "price_per_sqft", "price"] if col in deals.columns]
+    if sort_columns:
+        deals = deals.sort_values(
+            sort_columns,
+            ascending=[True] * len(sort_columns),
+            na_position="last",
+        )
     return deals.head(20)
 
 
 def build_zip_compare(df: pd.DataFrame) -> pd.DataFrame:
-    grouped = (
-        df.groupby("zip", dropna=False)
-        .agg(
-            listings=("zip", "size"),
-            median_price=("price", "median"),
-            avg_price=("price", "mean"),
-            median_sqft=("sqft", "median"),
-            avg_price_per_sqft=("price_per_sqft", "mean"),
-            median_price_per_sqft=("price_per_sqft", "median"),
-            median_days_on_market=("days_on_market", "median"),
-            avg_beds=("beds", "mean"),
-            avg_baths=("baths", "mean"),
-        )
-        .reset_index()
-    )
+    if "zip" not in df.columns:
+        return pd.DataFrame()
+
+    aggregations = {"listings": ("zip", "size")}
+    optional_aggregations = {
+        "median_price": ("price", "median"),
+        "avg_price": ("price", "mean"),
+        "median_sqft": ("sqft", "median"),
+        "avg_price_per_sqft": ("price_per_sqft", "mean"),
+        "median_price_per_sqft": ("price_per_sqft", "median"),
+        "median_days_on_market": ("days_on_market", "median"),
+        "avg_beds": ("beds", "mean"),
+        "avg_baths": ("baths", "mean"),
+    }
+    for output_column, (source_column, operation) in optional_aggregations.items():
+        if source_column in df.columns:
+            aggregations[output_column] = (source_column, operation)
+
+    grouped = df.groupby("zip", dropna=False).agg(**aggregations).reset_index()
 
     numeric_columns = [
         "median_price",
@@ -77,11 +97,13 @@ def build_zip_compare(df: pd.DataFrame) -> pd.DataFrame:
         if col in grouped.columns:
             grouped[col] = grouped[col].round(2)
 
-    grouped = grouped.sort_values(
-        ["avg_price_per_sqft", "median_price"],
-        ascending=[True, True],
-        na_position="last",
-    )
+    sort_columns = [col for col in ["avg_price_per_sqft", "median_price"] if col in grouped.columns]
+    if sort_columns:
+        grouped = grouped.sort_values(
+            sort_columns,
+            ascending=[True] * len(sort_columns),
+            na_position="last",
+        )
     return grouped
 
 

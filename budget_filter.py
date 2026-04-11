@@ -65,6 +65,13 @@ def build_filter_summary(args) -> dict:
     return summary
 
 
+def numeric_column(df: pd.DataFrame, column: str) -> bool:
+    if column not in df.columns:
+        return False
+    df[column] = pd.to_numeric(df[column], errors="coerce")
+    return True
+
+
 def main() -> int:
     run_dir, timestamp = ensure_run_context(create=True)
     input_path = resolve_input_path("analysis_ready", ".csv")
@@ -94,30 +101,28 @@ def main() -> int:
         results_df = pd.read_csv(results_path, usecols=["url", "listingRemarks"])
 
     filtered = df.copy()
-    filtered["price"] = pd.to_numeric(filtered["price"], errors="coerce")
-    filtered["sqft"] = pd.to_numeric(filtered["sqft"], errors="coerce")
-    if "lot_size" in filtered.columns:
-        filtered["lot_size"] = pd.to_numeric(filtered["lot_size"], errors="coerce")
-    if "beds" in filtered.columns:
-        filtered["beds"] = pd.to_numeric(filtered["beds"], errors="coerce")
-    if "baths" in filtered.columns:
-        filtered["baths"] = pd.to_numeric(filtered["baths"], errors="coerce")
-    if "garage_spaces" in filtered.columns:
-        filtered["garage_spaces"] = pd.to_numeric(filtered["garage_spaces"], errors="coerce")
-    if "parking_spaces" in filtered.columns:
-        filtered["parking_spaces"] = pd.to_numeric(filtered["parking_spaces"], errors="coerce")
-    if "school_score" in filtered.columns:
-        filtered["school_score"] = pd.to_numeric(filtered["school_score"], errors="coerce")
-    if "elementary_school_score" in filtered.columns:
-        filtered["elementary_school_score"] = pd.to_numeric(filtered["elementary_school_score"], errors="coerce")
-    if "elementary_school_rating" in filtered.columns:
-        filtered["elementary_school_rating"] = pd.to_numeric(filtered["elementary_school_rating"], errors="coerce")
-    if "high_school_score" in filtered.columns:
-        filtered["high_school_score"] = pd.to_numeric(filtered["high_school_score"], errors="coerce")
-    if "high_school_rating" in filtered.columns:
-        filtered["high_school_rating"] = pd.to_numeric(filtered["high_school_rating"], errors="coerce")
-    filtered["price_per_sqft"] = pd.to_numeric(filtered["price_per_sqft"], errors="coerce")
-    filtered["days_on_market"] = pd.to_numeric(filtered["days_on_market"], errors="coerce")
+    numeric_columns = [
+        "price",
+        "sqft",
+        "lot_size",
+        "beds",
+        "baths",
+        "garage_spaces",
+        "parking_spaces",
+        "school_score",
+        "elementary_school_score",
+        "elementary_school_rating",
+        "high_school_score",
+        "high_school_rating",
+        "price_per_sqft",
+        "days_on_market",
+    ]
+    for column in numeric_columns:
+        numeric_column(filtered, column)
+
+    if "price_per_sqft" not in filtered.columns and {"price", "sqft"}.issubset(filtered.columns):
+        filtered["price_per_sqft"] = filtered["price"] / filtered["sqft"].replace(0, pd.NA)
+
     if "zip" in filtered.columns:
         filtered["zip"] = filtered["zip"].astype(str)
     if "property_type" in filtered.columns:
@@ -127,9 +132,11 @@ def main() -> int:
     if "has_virtual_tour" in filtered.columns:
         filtered["has_virtual_tour"] = filtered["has_virtual_tour"].fillna(False).astype(bool)
 
-    filtered = filtered[
-        filtered["price"].between(min_price, max_price, inclusive="both")
-    ].copy()
+    if "price" not in filtered.columns:
+        print("analysis_ready.csv is missing required `price` column for budget filtering.")
+        return 1
+
+    filtered = filtered[filtered["price"].between(min_price, max_price, inclusive="both")].copy()
 
     if args.min_beds is not None and "beds" in filtered.columns:
         filtered = filtered[filtered["beds"].fillna(0) >= args.min_beds].copy()
@@ -175,10 +182,10 @@ def main() -> int:
         filtered["matched_schools"] = filtered["matched_schools"].fillna("")
         filtered = filtered[filtered["matched_schools"] != ""].copy()
 
-    if args.max_price_per_sqft is not None:
+    if args.max_price_per_sqft is not None and "price_per_sqft" in filtered.columns:
         filtered = filtered[filtered["price_per_sqft"].fillna(float("inf")) <= args.max_price_per_sqft].copy()
 
-    if args.max_days_on_market is not None:
+    if args.max_days_on_market is not None and "days_on_market" in filtered.columns:
         filtered = filtered[filtered["days_on_market"].fillna(float("inf")) <= args.max_days_on_market].copy()
 
     if args.has_virtual_tour and "has_virtual_tour" in filtered.columns:
@@ -199,11 +206,13 @@ def main() -> int:
         exclude_zips = {str(zip_code) for zip_code in args.exclude_zips}
         filtered = filtered[~filtered["zip"].isin(exclude_zips)].copy()
 
-    filtered = filtered.sort_values(
-        ["price_per_sqft", "price", "days_on_market"],
-        ascending=[True, True, True],
-        na_position="last",
-    )
+    sort_columns = [col for col in ["price_per_sqft", "price", "days_on_market"] if col in filtered.columns]
+    if sort_columns:
+        filtered = filtered.sort_values(
+            sort_columns,
+            ascending=[True] * len(sort_columns),
+            na_position="last",
+        )
 
     filtered.to_csv(output_csv_path, index=False)
     summary_json_path.write_text(json.dumps(build_filter_summary(args), indent=2), encoding="utf-8")

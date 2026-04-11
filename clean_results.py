@@ -84,6 +84,7 @@ OUTPUT_COLUMNS = {
 }
 
 REDFIN_SCHOOLS_API = "https://www.redfin.com/stingray/api/v1/home/details/belowTheFold/schoolsAndDistrictsInfo"
+PROGRESS_EVERY = 10
 
 
 def score_school_text(text: str) -> int:
@@ -173,12 +174,22 @@ def school_levels(grade_ranges: str):
 def fetch_redfin_school_ratings(df: pd.DataFrame) -> pd.DataFrame:
     required_columns = {"propertyId", "listingId", "url"}
     if not required_columns.issubset(df.columns):
+        print(
+            "[clean] Skipping Redfin school ratings; missing columns: %s"
+            % ", ".join(sorted(required_columns - set(df.columns))),
+            flush=True,
+        )
         return pd.DataFrame(index=df.index)
 
     session = requests.Session()
     records = []
+    failures = 0
+    skipped = 0
+    total = len(df)
 
-    for _, row in df.iterrows():
+    print(f"[clean] Fetching Redfin school ratings for {total} listings...", flush=True)
+
+    for position, (_, row) in enumerate(df.iterrows(), start=1):
         property_id = row.get("propertyId")
         listing_id = row.get("listingId")
         referer = row.get("url")
@@ -193,8 +204,12 @@ def fetch_redfin_school_ratings(df: pd.DataFrame) -> pd.DataFrame:
         }
 
         if pd.isna(property_id) or pd.isna(listing_id):
+            skipped += 1
             records.append(school_record)
             continue
+
+        if position == 1 or position % PROGRESS_EVERY == 0:
+            print(f"[clean] School ratings {position}/{total}: {referer}", flush=True)
 
         try:
             params = {
@@ -211,7 +226,10 @@ def fetch_redfin_school_ratings(df: pd.DataFrame) -> pd.DataFrame:
             response.raise_for_status()
             payload = decode_redfin_json(response.text)
             schools = payload.get("payload", {}).get("servingThisHomeSchools", [])
-        except Exception:
+        except Exception as exc:
+            failures += 1
+            if failures <= 5:
+                print(f"[clean] School rating fetch failed for {referer}: {exc}", flush=True)
             records.append(school_record)
             continue
 
@@ -247,28 +265,52 @@ def fetch_redfin_school_ratings(df: pd.DataFrame) -> pd.DataFrame:
 
         records.append(school_record)
 
+    print(
+        f"[clean] School ratings complete. Records: {len(records)}, skipped: {skipped}, failures: {failures}.",
+        flush=True,
+    )
     return pd.DataFrame(records, index=df.index)
 
 
 def fetch_redfin_photo_urls(df: pd.DataFrame) -> pd.Series:
     if "url" not in df.columns:
+        print("[clean] Skipping cover photo URLs; missing `url` column.", flush=True)
         return pd.Series(index=df.index, dtype="object")
 
     session = requests.Session()
     photo_urls = []
+    failures = 0
+    skipped = 0
+    found = 0
+    total = len(df)
 
-    for _, row in df.iterrows():
+    print(f"[clean] Fetching cover photo URLs for {total} listings...", flush=True)
+
+    for position, (_, row) in enumerate(df.iterrows(), start=1):
         listing_url = row.get("url")
         if not isinstance(listing_url, str) or not listing_url.startswith("http"):
+            skipped += 1
             photo_urls.append(pd.NA)
             continue
 
+        if position == 1 or position % PROGRESS_EVERY == 0:
+            print(f"[clean] Cover photos {position}/{total}: {listing_url}", flush=True)
+
         try:
             urls = fetch_listing_photo_urls(listing_url, session=session, timeout=20)
+            if urls:
+                found += 1
             photo_urls.append(urls[0] if urls else pd.NA)
-        except Exception:
+        except Exception as exc:
+            failures += 1
+            if failures <= 5:
+                print(f"[clean] Cover photo fetch failed for {listing_url}: {exc}", flush=True)
             photo_urls.append(pd.NA)
 
+    print(
+        f"[clean] Cover photo fetch complete. Found: {found}, skipped: {skipped}, failures: {failures}.",
+        flush=True,
+    )
     return pd.Series(photo_urls, index=df.index, dtype="object")
 
 
@@ -280,20 +322,26 @@ def main() -> int:
         print(f"Missing input file: {input_path.resolve()}")
         return 1
 
+    print(f"[clean] Loading raw results from {input_path.resolve()}", flush=True)
     df = pd.read_csv(input_path)
+    print(f"[clean] Loaded {len(df)} raw rows and {len(df.columns)} columns.", flush=True)
 
     available_columns = [col for col in OUTPUT_COLUMNS if col in df.columns]
+    print(f"[clean] Keeping {len(available_columns)} core columns.", flush=True)
     clean = df[available_columns].copy()
     clean = clean.rename(columns=OUTPUT_COLUMNS)
 
     school_ratings = fetch_redfin_school_ratings(df)
     if not school_ratings.empty:
+        print(f"[clean] Adding {len(school_ratings.columns)} Redfin school rating columns.", flush=True)
         for column in school_ratings.columns:
             clean[column] = school_ratings[column]
 
+    print("[clean] Adding cover photo URLs.", flush=True)
     clean["photo_url"] = fetch_redfin_photo_urls(df)
 
     if "listingRemarks" in df.columns:
+        print("[clean] Scoring school-related listing remarks.", flush=True)
         listing_remarks = df["listingRemarks"].fillna("")
         clean["school_score"] = listing_remarks.apply(score_school_text)
         clean["elementary_school_score"] = listing_remarks.apply(
@@ -304,9 +352,11 @@ def main() -> int:
         )
 
     if "property_type" in clean.columns:
+        print("[clean] Mapping Redfin property type codes.", flush=True)
         clean["property_type_code"] = pd.to_numeric(clean["property_type"], errors="coerce")
         clean["property_type"] = clean["property_type_code"].map(PROPERTY_TYPE_MAP).fillna("unknown")
 
+    print("[clean] Normalizing numeric columns.", flush=True)
     if "price" in clean.columns:
         clean["price"] = pd.to_numeric(clean["price"], errors="coerce")
     if "sqft" in clean.columns:
@@ -390,11 +440,15 @@ def main() -> int:
         "url",
     ]
     ordered_columns = [col for col in preferred_order if col in clean.columns]
+    print(f"[clean] Ordering {len(ordered_columns)} output columns.", flush=True)
     clean = clean[ordered_columns]
 
     sort_columns = [col for col in ["price_per_sqft", "price", "days_on_market"] if col in clean.columns]
-    clean = clean.sort_values(sort_columns, ascending=[True, True, True], na_position="last")
+    if sort_columns:
+        print(f"[clean] Sorting by: {', '.join(sort_columns)}", flush=True)
+        clean = clean.sort_values(sort_columns, ascending=[True] * len(sort_columns), na_position="last")
 
+    print(f"[clean] Writing cleaned output to {output_csv_path.resolve()}", flush=True)
     clean.to_csv(output_csv_path, index=False)
     update_latest_analysis_ready_pointer_from_path(output_csv_path)
 

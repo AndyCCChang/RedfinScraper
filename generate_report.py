@@ -19,6 +19,7 @@ COLUMN_LABELS = {
     "price_per_sqft": "Price / SqFt",
     "beds": "Beds",
     "baths": "Baths",
+    "mls_status": "Status",
     "garage_spaces": "Garage",
     "parking_spaces": "Parking",
     "days_on_market": "Days On Market",
@@ -127,13 +128,13 @@ def render_filter_summary(filters: dict) -> str:
         ("Min School Score", filters.get("min_school_score")),
         ("Min Elementary Rating", filters.get("min_elementary_school_score")),
         ("Min High Rating", filters.get("min_high_school_score")),
-        ("School Names", ", ".join(filters.get("school_names", [])) if filters.get("school_names") else None),
+        ("School Names", ", ".join(str(value) for value in filters.get("school_names", [])) if filters.get("school_names") else None),
         ("Max Price / SqFt", money(filters.get("max_price_per_sqft")) if "max_price_per_sqft" in filters else None),
         ("Max Days On Market", filters.get("max_days_on_market")),
         ("Virtual Tour", "Yes" if filters.get("has_virtual_tour") else None),
-        ("Property Types", ", ".join(filters.get("property_types", [])) if filters.get("property_types") else None),
-        ("Included ZIPs", ", ".join(filters.get("include_zips", [])) if filters.get("include_zips") else None),
-        ("Excluded ZIPs", ", ".join(filters.get("exclude_zips", [])) if filters.get("exclude_zips") else None),
+        ("Property Types", ", ".join(str(value) for value in filters.get("property_types", [])) if filters.get("property_types") else None),
+        ("Included ZIPs", ", ".join(str(value) for value in filters.get("include_zips", [])) if filters.get("include_zips") else None),
+        ("Excluded ZIPs", ", ".join(str(value) for value in filters.get("exclude_zips", [])) if filters.get("exclude_zips") else None),
     ]
 
     items = [
@@ -175,20 +176,20 @@ def render_search_context(
         ("Min Lot Size", number(budget_filters.get("min_lot_size")) if budget_filters.get("min_lot_size") is not None else None),
         ("Min Garage", budget_filters.get("min_garage_spaces")),
         ("Min Parking", budget_filters.get("min_parking_spaces")),
-        ("Property Types", ", ".join(budget_filters.get("property_types", [])) if budget_filters.get("property_types") else None),
-        ("Included ZIPs", ", ".join(budget_filters.get("include_zips", [])) if budget_filters.get("include_zips") else None),
-        ("Excluded ZIPs", ", ".join(budget_filters.get("exclude_zips", [])) if budget_filters.get("exclude_zips") else None),
+        ("Property Types", ", ".join(str(value) for value in budget_filters.get("property_types", [])) if budget_filters.get("property_types") else None),
+        ("Included ZIPs", ", ".join(str(value) for value in budget_filters.get("include_zips", [])) if budget_filters.get("include_zips") else None),
+        ("Excluded ZIPs", ", ".join(str(value) for value in budget_filters.get("exclude_zips", [])) if budget_filters.get("exclude_zips") else None),
         ("Max Price / SqFt", money(budget_filters.get("max_price_per_sqft")) if budget_filters.get("max_price_per_sqft") is not None else None),
         ("Max Days On Market", budget_filters.get("max_days_on_market")),
         ("Min School Score", budget_filters.get("min_school_score")),
         ("Min Elementary Rating", budget_filters.get("min_elementary_school_score")),
         ("Min High Rating", budget_filters.get("min_high_school_score")),
-        ("School Names", ", ".join(budget_filters.get("school_names", [])) if budget_filters.get("school_names") else None),
+        ("School Names", ", ".join(str(value) for value in budget_filters.get("school_names", [])) if budget_filters.get("school_names") else None),
         ("Virtual Tour", "Yes" if budget_filters.get("has_virtual_tour") else None),
     ]
     config_rows = [
-        ("Cities", ", ".join(config_snapshot.get("city_states", [])) if config_snapshot.get("city_states") else None),
-        ("ZIP Codes", ", ".join(config_snapshot.get("zip_codes", [])) if config_snapshot.get("zip_codes") else None),
+        ("Cities", ", ".join(str(value) for value in config_snapshot.get("city_states", [])) if config_snapshot.get("city_states") else None),
+        ("ZIP Codes", ", ".join(str(value) for value in config_snapshot.get("zip_codes", [])) if config_snapshot.get("zip_codes") else None),
         ("Sold Listings", config_snapshot.get("sold")),
         ("Sale Period", config_snapshot.get("sale_period")),
         ("Multiprocessing", config_snapshot.get("multiprocessing")),
@@ -237,8 +238,8 @@ def render_search_context(
 def render_run_panel(user_command: str, config_snapshot: dict, budget_filters: dict) -> str:
     default_command = user_command or "python3 all_in_one.py"
     config_text = json.dumps(config_snapshot or {}, indent=2)
-    city_states = "\n".join(config_snapshot.get("city_states", []))
-    zip_codes = "\n".join(config_snapshot.get("zip_codes", []))
+    city_states = "\n".join(str(value) for value in config_snapshot.get("city_states", []))
+    zip_codes = "\n".join(str(value) for value in config_snapshot.get("zip_codes", []))
     zip_database_path = config_snapshot.get("zip_database_path", "./zip_code_database.csv")
     multiprocessing = config_snapshot.get("multiprocessing", "False")
     sold = config_snapshot.get("sold", "False")
@@ -250,12 +251,12 @@ def render_run_panel(user_command: str, config_snapshot: dict, budget_filters: d
     min_beds = budget_filters.get("min_beds", "")
     min_baths = budget_filters.get("min_baths", "")
     min_lot_size = budget_filters.get("min_lot_size", "")
-    property_type_values = set(budget_filters.get("property_types", []))
-    include_zips = " ".join(budget_filters.get("include_zips", []))
-    exclude_zips = " ".join(budget_filters.get("exclude_zips", []))
+    property_type_values = {str(value) for value in budget_filters.get("property_types", [])}
+    include_zips = " ".join(str(value) for value in budget_filters.get("include_zips", []))
+    exclude_zips = " ".join(str(value) for value in budget_filters.get("exclude_zips", []))
     min_elementary = budget_filters.get("min_elementary_school_score", "")
     min_high = budget_filters.get("min_high_school_score", "")
-    school_names = "\n".join(budget_filters.get("school_names", []))
+    school_names = "\n".join(str(value) for value in budget_filters.get("school_names", []))
     return f"""
 <section>
   <h2>Run From Page</h2>
@@ -471,6 +472,7 @@ def build_html(
                 "photo_url",
                 "zip",
                 "property_type",
+                "mls_status",
                 "price",
                 "sqft",
                 "lot_size",
@@ -501,6 +503,7 @@ def build_html(
                 "full_address",
                 "photo_url",
                 "zip",
+                "mls_status",
                 "price",
                 "sqft",
                 "price_per_sqft",
@@ -867,8 +870,8 @@ def build_html(
     </div>
 
     {run_panel_section}
-    {render_table(report_top_deals.head(15), "Top Deals", ["full_address", "photo_url", "zip", "price", "sqft", "price_per_sqft", "beds", "baths", "days_on_market", "deal_score", "url"], link_column="url")}
-    {render_table(report_analysis.head(15), "Latest Listings Snapshot", ["full_address", "photo_url", "zip", "property_type", "price", "sqft", "lot_size", "beds", "baths", "elementary_school_name", "elementary_school_rating", "middle_school_name", "middle_school_rating", "high_school_name", "high_school_rating", "garage_spaces", "parking_spaces", "days_on_market", "url"], link_column="url")}
+    {render_table(report_top_deals.head(15), "Top Deals", ["full_address", "photo_url", "zip", "mls_status", "price", "sqft", "price_per_sqft", "beds", "baths", "days_on_market", "deal_score", "url"], link_column="url")}
+    {render_table(report_analysis.head(15), "Latest Listings Snapshot", ["full_address", "photo_url", "zip", "property_type", "mls_status", "price", "sqft", "lot_size", "beds", "baths", "elementary_school_name", "elementary_school_rating", "middle_school_name", "middle_school_rating", "high_school_name", "high_school_rating", "garage_spaces", "parking_spaces", "days_on_market", "url"], link_column="url")}
     {school_section}
     {render_table(zip_compare, "Zip Comparison", ["zip", "listings", "median_price", "avg_price", "median_sqft", "avg_price_per_sqft", "median_price_per_sqft", "median_days_on_market", "avg_beds", "avg_baths"])}
     {price_changes_section}

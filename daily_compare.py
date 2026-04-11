@@ -47,9 +47,23 @@ def build_removed_listings(current_df: pd.DataFrame, previous_df: pd.DataFrame) 
     return previous_df[~previous_df["url"].isin(current_urls)].copy()
 
 
+def select_columns_with_defaults(df: pd.DataFrame, columns: list) -> pd.DataFrame:
+    selected = df[[col for col in columns if col in df.columns]].copy()
+    for col in columns:
+        if col not in selected.columns:
+            selected[col] = pd.NA
+    return selected[columns]
+
+
 def build_price_changes(current_df: pd.DataFrame, previous_df: pd.DataFrame) -> pd.DataFrame:
-    current_prices = current_df[["url", "full_address", "price", "days_on_market"]].copy()
-    previous_prices = previous_df[["url", "full_address", "price"]].copy()
+    current_prices = select_columns_with_defaults(
+        current_df,
+        ["url", "full_address", "price", "days_on_market"],
+    )
+    previous_prices = select_columns_with_defaults(
+        previous_df,
+        ["url", "full_address", "price"],
+    )
 
     merged = current_prices.merge(
         previous_prices,
@@ -67,27 +81,32 @@ def build_price_changes(current_df: pd.DataFrame, previous_df: pd.DataFrame) -> 
         (changed["price_diff"] / changed["price_previous"]) * 100
     ).round(2)
 
-    changed = changed[
-        [
-            "full_address_current",
-            "price_previous",
-            "price_current",
-            "price_diff",
-            "price_diff_pct",
-            "days_on_market",
-            "url",
-        ]
-    ].rename(
+    output_columns = [
+        "full_address_current",
+        "price_previous",
+        "price_current",
+        "price_diff",
+        "price_diff_pct",
+        "days_on_market",
+        "url",
+    ]
+    for col in output_columns:
+        if col not in changed.columns:
+            changed[col] = pd.NA
+
+    changed = changed[output_columns].rename(
         columns={
             "full_address_current": "full_address",
         }
     )
 
-    changed = changed.sort_values(
-        ["price_diff", "price_current"],
-        ascending=[True, True],
-        na_position="last",
-    )
+    sort_columns = [col for col in ["price_diff", "price_current"] if col in changed.columns]
+    if sort_columns:
+        changed = changed.sort_values(
+            sort_columns,
+            ascending=[True] * len(sort_columns),
+            na_position="last",
+        )
     return changed
 
 
@@ -118,17 +137,21 @@ def main() -> int:
     price_changes = build_price_changes(current_df, previous_df)
 
     if not new_listings.empty:
-        new_listings = new_listings.sort_values(
-            ["price_per_sqft", "price"],
-            ascending=[True, True],
-            na_position="last",
-        )
+        sort_columns = [col for col in ["price_per_sqft", "price"] if col in new_listings.columns]
+        if sort_columns:
+            new_listings = new_listings.sort_values(
+                sort_columns,
+                ascending=[True] * len(sort_columns),
+                na_position="last",
+            )
     if not removed_listings.empty:
-        removed_listings = removed_listings.sort_values(
-            ["price_per_sqft", "price"],
-            ascending=[True, True],
-            na_position="last",
-        )
+        sort_columns = [col for col in ["price_per_sqft", "price"] if col in removed_listings.columns]
+        if sort_columns:
+            removed_listings = removed_listings.sort_values(
+                sort_columns,
+                ascending=[True] * len(sort_columns),
+                na_position="last",
+            )
 
     new_listings.to_csv(new_listings_path, index=False)
     removed_listings.to_csv(removed_listings_path, index=False)
