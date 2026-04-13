@@ -1,4 +1,6 @@
+import concurrent.futures
 import json
+import os
 
 import pandas as pd
 import requests
@@ -85,6 +87,7 @@ OUTPUT_COLUMNS = {
 
 REDFIN_SCHOOLS_API = "https://www.redfin.com/stingray/api/v1/home/details/belowTheFold/schoolsAndDistrictsInfo"
 PROGRESS_EVERY = 10
+CLEAN_WORKERS = int(os.environ.get("REDFIN_CLEAN_WORKERS", "12"))
 
 
 def score_school_text(text: str) -> int:
@@ -181,20 +184,8 @@ def fetch_redfin_school_ratings(df: pd.DataFrame) -> pd.DataFrame:
         )
         return pd.DataFrame(index=df.index)
 
-    session = requests.Session()
-    records = []
-    failures = 0
-    skipped = 0
-    total = len(df)
-
-    print(f"[clean] Fetching Redfin school ratings for {total} listings...", flush=True)
-
-    for position, (_, row) in enumerate(df.iterrows(), start=1):
-        property_id = row.get("propertyId")
-        listing_id = row.get("listingId")
-        referer = row.get("url")
-
-        school_record = {
+    def empty_school_record() -> dict:
+        return {
             "elementary_school_name": pd.NA,
             "elementary_school_rating": pd.NA,
             "middle_school_name": pd.NA,
@@ -203,13 +194,14 @@ def fetch_redfin_school_ratings(df: pd.DataFrame) -> pd.DataFrame:
             "high_school_rating": pd.NA,
         }
 
-        if pd.isna(property_id) or pd.isna(listing_id):
-            skipped += 1
-            records.append(school_record)
-            continue
+    def fetch_one(index, row_dict):
+        property_id = row_dict.get("propertyId")
+        listing_id = row_dict.get("listingId")
+        referer = row_dict.get("url")
+        school_record = empty_school_record()
 
-        if position == 1 or position % PROGRESS_EVERY == 0:
-            print(f"[clean] School ratings {position}/{total}: {referer}", flush=True)
+        if pd.isna(property_id) or pd.isna(listing_id):
+            return index, school_record, "skipped", None
 
         try:
             params = {
@@ -217,21 +209,18 @@ def fetch_redfin_school_ratings(df: pd.DataFrame) -> pd.DataFrame:
                 "listingId": int(listing_id),
                 "accessLevel": 1,
             }
-            response = session.get(
-                REDFIN_SCHOOLS_API,
-                params=params,
-                headers=school_request_headers(referer=referer),
-                timeout=20,
-            )
+            with requests.Session() as session:
+                response = session.get(
+                    REDFIN_SCHOOLS_API,
+                    params=params,
+                    headers=school_request_headers(referer=referer),
+                    timeout=20,
+                )
             response.raise_for_status()
             payload = decode_redfin_json(response.text)
             schools = payload.get("payload", {}).get("servingThisHomeSchools", [])
         except Exception as exc:
-            failures += 1
-            if failures <= 5:
-                print(f"[clean] School rating fetch failed for {referer}: {exc}", flush=True)
-            records.append(school_record)
-            continue
+            return index, school_record, "failed", f"{referer}: {exc}"
 
         best_by_level = {}
         for school in schools:
@@ -263,8 +252,36 @@ def fetch_redfin_school_ratings(df: pd.DataFrame) -> pd.DataFrame:
             school_record["%s_school_rating" % level] = candidate[0]
             school_record["%s_school_name" % level] = candidate[2]
 
-        records.append(school_record)
+        return index, school_record, "ok", None
 
+    records_by_index = {}
+    failures = 0
+    skipped = 0
+    total = len(df)
+    completed = 0
+
+    print(f"[clean] Fetching Redfin school ratings for {total} listings with {CLEAN_WORKERS} workers...", flush=True)
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=CLEAN_WORKERS) as executor:
+        futures = [
+            executor.submit(fetch_one, index, row.to_dict())
+            for index, row in df.iterrows()
+        ]
+        for future in concurrent.futures.as_completed(futures):
+            index, school_record, status, error = future.result()
+            records_by_index[index] = school_record
+            completed += 1
+            if status == "skipped":
+                skipped += 1
+            elif status == "failed":
+                failures += 1
+                if failures <= 5:
+                    print(f"[clean] School rating fetch failed for {error}", flush=True)
+
+            if completed == 1 or completed % PROGRESS_EVERY == 0 or completed == total:
+                print(f"[clean] School ratings progress: {completed}/{total}", flush=True)
+
+    records = [records_by_index.get(index, empty_school_record()) for index in df.index]
     print(
         f"[clean] School ratings complete. Records: {len(records)}, skipped: {skipped}, failures: {failures}.",
         flush=True,
@@ -277,40 +294,52 @@ def fetch_redfin_photo_urls(df: pd.DataFrame) -> pd.Series:
         print("[clean] Skipping cover photo URLs; missing `url` column.", flush=True)
         return pd.Series(index=df.index, dtype="object")
 
-    session = requests.Session()
-    photo_urls = []
+    def fetch_one(index, listing_url):
+        if not isinstance(listing_url, str) or not listing_url.startswith("http"):
+            return index, pd.NA, "skipped", None
+
+        try:
+            with requests.Session() as session:
+                urls = fetch_listing_photo_urls(listing_url, session=session, timeout=20)
+            return index, urls[0] if urls else pd.NA, "ok" if urls else "empty", None
+        except Exception as exc:
+            return index, pd.NA, "failed", f"{listing_url}: {exc}"
+
+    photo_urls_by_index = {}
     failures = 0
     skipped = 0
     found = 0
     total = len(df)
+    completed = 0
 
-    print(f"[clean] Fetching cover photo URLs for {total} listings...", flush=True)
+    print(f"[clean] Fetching cover photo URLs for {total} listings with {CLEAN_WORKERS} workers...", flush=True)
 
-    for position, (_, row) in enumerate(df.iterrows(), start=1):
-        listing_url = row.get("url")
-        if not isinstance(listing_url, str) or not listing_url.startswith("http"):
-            skipped += 1
-            photo_urls.append(pd.NA)
-            continue
-
-        if position == 1 or position % PROGRESS_EVERY == 0:
-            print(f"[clean] Cover photos {position}/{total}: {listing_url}", flush=True)
-
-        try:
-            urls = fetch_listing_photo_urls(listing_url, session=session, timeout=20)
-            if urls:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=CLEAN_WORKERS) as executor:
+        futures = [
+            executor.submit(fetch_one, index, row.get("url"))
+            for index, row in df.iterrows()
+        ]
+        for future in concurrent.futures.as_completed(futures):
+            index, photo_url, status, error = future.result()
+            photo_urls_by_index[index] = photo_url
+            completed += 1
+            if status == "ok":
                 found += 1
-            photo_urls.append(urls[0] if urls else pd.NA)
-        except Exception as exc:
-            failures += 1
-            if failures <= 5:
-                print(f"[clean] Cover photo fetch failed for {listing_url}: {exc}", flush=True)
-            photo_urls.append(pd.NA)
+            elif status == "skipped":
+                skipped += 1
+            elif status == "failed":
+                failures += 1
+                if failures <= 5:
+                    print(f"[clean] Cover photo fetch failed for {error}", flush=True)
+
+            if completed == 1 or completed % PROGRESS_EVERY == 0 or completed == total:
+                print(f"[clean] Cover photo progress: {completed}/{total}", flush=True)
 
     print(
         f"[clean] Cover photo fetch complete. Found: {found}, skipped: {skipped}, failures: {failures}.",
         flush=True,
     )
+    photo_urls = [photo_urls_by_index.get(index, pd.NA) for index in df.index]
     return pd.Series(photo_urls, index=df.index, dtype="object")
 
 

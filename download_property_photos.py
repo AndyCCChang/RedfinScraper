@@ -1,6 +1,8 @@
+import concurrent.futures
 import json
 import os
 from pathlib import Path
+import threading
 
 import pandas as pd
 import requests
@@ -16,6 +18,9 @@ from pipeline_context import resolve_input_path
 
 
 PROGRESS_EVERY = 10
+PHOTO_WORKERS = int(os.environ.get("REDFIN_PHOTO_WORKERS", "8"))
+CACHE_LOCKS = {}
+CACHE_LOCKS_GUARD = threading.Lock()
 
 
 def ensure_dirs() -> None:
@@ -30,16 +35,23 @@ def download_to_cache(photo_url: str, session: requests.Session) -> tuple:
     if cache_path.exists():
         return cache_path, False
 
-    response = session.get(photo_url, timeout=30, stream=True)
-    response.raise_for_status()
+    with CACHE_LOCKS_GUARD:
+        cache_lock = CACHE_LOCKS.setdefault(str(cache_path), threading.Lock())
 
-    tmp_path = cache_path.with_suffix(cache_path.suffix + ".tmp")
-    with tmp_path.open("wb") as fh:
-        for chunk in response.iter_content(chunk_size=1024 * 128):
-            if chunk:
-                fh.write(chunk)
-    os.replace(tmp_path, cache_path)
-    return cache_path, True
+    with cache_lock:
+        if cache_path.exists():
+            return cache_path, False
+
+        response = session.get(photo_url, timeout=30, stream=True)
+        response.raise_for_status()
+
+        tmp_path = cache_path.with_suffix(cache_path.suffix + f".{threading.get_ident()}.tmp")
+        with tmp_path.open("wb") as fh:
+            for chunk in response.iter_content(chunk_size=1024 * 128):
+                if chunk:
+                    fh.write(chunk)
+        os.replace(tmp_path, cache_path)
+        return cache_path, True
 
 
 def safe_link_target(target: Path, link_path: Path) -> Path:
@@ -208,46 +220,44 @@ def main() -> int:
         return 1
 
     print(f"Loading listings from {input_path.resolve()}", flush=True)
-    print(f"Preparing to archive photos for {len(df)} cleaned listings.", flush=True)
+    print(f"Preparing to archive photos for {len(df)} cleaned listings with {PHOTO_WORKERS} workers.", flush=True)
 
-    session = requests.Session()
-    total_listings = 0
-    total_downloaded = 0
-    total_cached = 0
-    failures = 0
+    tasks = []
     skipped = 0
-    processed_with_photos = 0
-
     for _, row in df.iterrows():
         listing_url = row.get("url")
         if not isinstance(listing_url, str) or not listing_url.startswith("http"):
             skipped += 1
             continue
-
-        total_listings += 1
         listing_dir = LISTING_PHOTOS_DIR / listing_key_from_url(listing_url)
         listing_title = str(row.get("full_address") or listing_dir.name)
+        tasks.append((listing_url, listing_dir, listing_title))
 
-        if total_listings == 1 or total_listings % PROGRESS_EVERY == 0:
-            print(
-                f"[photos] Processing listing {total_listings}: {listing_title}",
-                flush=True,
-            )
-
+    def process_listing(task):
+        listing_url, listing_dir, listing_title = task
+        downloaded_count = 0
+        cached_count = 0
         try:
-            photo_urls = fetch_listing_photo_urls(listing_url, session=session, timeout=30)
+            with requests.Session() as session:
+                photo_urls = fetch_listing_photo_urls(listing_url, session=session, timeout=30)
             if not photo_urls:
-                print(f"[photos] No photos found for: {listing_title}", flush=True)
-                continue
+                return {
+                    "status": "empty",
+                    "title": listing_title,
+                    "downloaded": 0,
+                    "cached": 0,
+                    "photo_count": 0,
+                }
 
             cache_paths = []
-            for photo_url in photo_urls:
-                cache_path, downloaded = download_to_cache(photo_url, session=session)
-                cache_paths.append(cache_path)
-                if downloaded:
-                    total_downloaded += 1
-                else:
-                    total_cached += 1
+            with requests.Session() as session:
+                for photo_url in photo_urls:
+                    cache_path, downloaded = download_to_cache(photo_url, session=session)
+                    cache_paths.append(cache_path)
+                    if downloaded:
+                        downloaded_count += 1
+                    else:
+                        cached_count += 1
 
             write_listing_links(
                 listing_dir,
@@ -256,20 +266,57 @@ def main() -> int:
                 listing_title=listing_title,
                 listing_url=listing_url,
             )
-            processed_with_photos += 1
+            return {
+                "status": "ok",
+                "title": listing_title,
+                "downloaded": downloaded_count,
+                "cached": cached_count,
+                "photo_count": len(photo_urls),
+            }
+        except Exception as exc:
+            return {
+                "status": "failed",
+                "title": listing_title,
+                "downloaded": downloaded_count,
+                "cached": cached_count,
+                "photo_count": 0,
+                "error": str(exc),
+            }
 
-            if total_listings == 1 or total_listings % PROGRESS_EVERY == 0:
+    total_downloaded = 0
+    total_cached = 0
+    failures = 0
+    empty = 0
+    processed_with_photos = 0
+    completed = 0
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=PHOTO_WORKERS) as executor:
+        futures = [executor.submit(process_listing, task) for task in tasks]
+        for future in concurrent.futures.as_completed(futures):
+            result = future.result()
+            completed += 1
+            total_downloaded += result.get("downloaded", 0)
+            total_cached += result.get("cached", 0)
+
+            if result["status"] == "ok":
+                processed_with_photos += 1
+            elif result["status"] == "empty":
+                empty += 1
+                print(f"[photos] No photos found for: {result['title']}", flush=True)
+            elif result["status"] == "failed":
+                failures += 1
+                print(f"[photos] Failed: {result['title']} ({result.get('error')})", flush=True)
+
+            if completed == 1 or completed % PROGRESS_EVERY == 0 or completed == len(tasks):
                 print(
-                    f"[photos] Saved {len(photo_urls)} photos for {listing_title} "
-                    f"(downloaded so far: {total_downloaded}, reused cache: {total_cached})",
+                    f"[photos] Progress: {completed}/{len(tasks)} listings "
+                    f"(downloaded: {total_downloaded}, reused cache: {total_cached}, failures: {failures})",
                     flush=True,
                 )
-        except Exception as exc:
-            failures += 1
-            print(f"[photos] Failed: {listing_title} ({exc})", flush=True)
 
-    print(f"Processed {total_listings} listings.")
+    print(f"Processed {len(tasks)} listings.")
     print(f"Listings with photos saved: {processed_with_photos}")
+    print(f"Listings without photos found: {empty}")
     print(f"Skipped listings without valid URLs: {skipped}")
     print(f"Downloaded {total_downloaded} new photos.")
     print(f"Reused {total_cached} cached photos.")

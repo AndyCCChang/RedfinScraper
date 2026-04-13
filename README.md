@@ -65,6 +65,17 @@ This will generate:
 - `budget_matches_<timestamp>.csv`: Listings within your budget range when budget args are provided
 - `report_<timestamp>.html`: The HTML report for that run
 
+### Speed Tuning
+`clean_results.py` and `download_property_photos.py` use threads for network-heavy work.
+
+You can tune worker counts with environment variables:
+
+`REDFIN_CLEAN_WORKERS=12 REDFIN_PHOTO_WORKERS=8 python3 all_in_one.py 1000000 2800000 --min-beds 3 --property-types house`
+
+If Redfin starts timing out or blocking requests, lower the values, for example:
+
+`REDFIN_CLEAN_WORKERS=4 REDFIN_PHOTO_WORKERS=4 python3 all_in_one.py 1000000 2800000 --min-beds 3 --property-types house`
+
 ### Individual Helper Scripts
 - `python3 run.py`
   Scrape Redfin and save raw results to `results.csv`
